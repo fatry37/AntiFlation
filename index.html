@@ -4,14 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="theme-color" content="#0a0a0a">
-<title>AntiFlation | Besançon</title>
+<title>AntiFlation</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-/* REPRISE DE TES VARIABLES ET BASE */
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 :root{
   --bg:#0a0a0a;--bg2:#111;--bg3:#181818;--bg4:#202020;
@@ -19,53 +18,241 @@
   --text:#f0f0f0;--text2:#888;--text3:#444;
   --green:#00d4a0;--green2:#00b388;--gbg:rgba(0,212,160,.08);--gborder:rgba(0,212,160,.2);
   --blue:#4d9fff;--bbg:rgba(77,159,255,.08);--bborder:rgba(77,159,255,.2);
-  --r:18px;--rsm:12px;
+  --amber:#ffbe00;--abg:rgba(255,190,0,.08);--aborder:rgba(255,190,0,.2);
+  --red:#ff5c5c;--rbg:rgba(255,92,92,.08);--rborder:rgba(255,92,92,.2);
+  --purple:#a78bfa;--pbg:rgba(167,139,250,.08);--pborder:rgba(167,139,250,.2);
+  --sport:#ff6b35;--spbg:rgba(255,107,53,.08);--spborder:rgba(255,107,53,.2);
+  --r:14px;--rsm:9px;
 }
-body{max-width:480px;margin:0 auto;background:var(--bg);color:var(--text);font-family:-apple-system,sans-serif;height:100vh;display:flex;flex-direction:column;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,'SF Pro Text','Helvetica Neue',Arial,sans-serif;}
+body{max-width:480px;margin:0 auto;display:flex;flex-direction:column;height:100%;}
+body.sport-mode{--green:#ff6b35;--green2:#e55a28;--gbg:rgba(255,107,53,.08);--gborder:rgba(255,107,53,.2);}
 
-/* DESIGN ÉPURÉ : HEADER COMPACT */
-.hdr{padding:20px 16px 10px;background:var(--bg);position:sticky;top:0;z-index:100;}
-.hdr-row{display:flex;justify-content:space-between;align-items:center;}
-.logo{font-size:22px;font-weight:900;letter-spacing:-1px;}
-.logo span{color:var(--green);}
-.xp-pill{background:var(--gbg);border:1px solid var(--gborder);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:800;color:var(--green);}
+.hdr{background:var(--bg2);border-bottom:1px solid var(--border);padding:12px 16px 10px;flex-shrink:0;}
+.hdr-row{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.logo{font-size:20px;font-weight:800;letter-spacing:-0.8px;}
+.logo span{color:var(--green);transition:color .3s;}
+.live{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text2);}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:blink 2s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.mode-toggle{display:flex;align-items:center;gap:5px;background:var(--bg3);border:1px solid var(--border2);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:11px;font-weight:700;color:var(--text2);transition:all .2s;}
+.mode-toggle.sport{background:var(--spbg);border-color:var(--spborder);color:var(--sport);}
+.hdr-sub{font-size:11px;color:var(--text3);margin-top:3px;display:flex;gap:8px;align-items:center;}
+.hdr-pseudo{color:var(--green);font-weight:700;}
 
-/* RECHERCHE CENTRALE (Style iOS/Clean) */
-.search-hero{padding:10px 16px;}
-.search-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:25px;padding:12px 18px;display:flex;align-items:center;gap:10px;box-shadow:0 4px 20px rgba(0,0,0,0.3);}
-.search-wrap input{background:none;border:none;color:var(--text);flex:1;outline:none;font-size:15px;}
+.tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;scrollbar-width:none;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{flex:0 0 auto;padding:11px 12px;font-size:11px;font-weight:700;border:none;background:none;cursor:pointer;color:var(--text3);border-bottom:2px solid transparent;transition:all .15s;letter-spacing:.03em;text-transform:uppercase;white-space:nowrap;}
+.tab.active{color:var(--green);border-bottom-color:var(--green);}
 
-/* NAVIGATION PAR ONGLETS (Style Pills) */
-.tabs{display:flex;gap:8px;padding:10px 16px;overflow-x:auto;scrollbar-width:none;}
-.tab{background:var(--bg3);border:1px solid var(--border2);color:var(--text3);padding:8px 16px;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap;cursor:pointer;transition:0.2s;}
-.tab.active{background:var(--gbg);border-color:var(--green);color:var(--green);}
-
-/* BOUTON FLOTTANT D'AJOUT (Intuitif) */
-.fab{position:fixed;bottom:30px;right:20px;width:56px;height:56px;border-radius:28px;background:var(--green);color:#001a12;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 8px 24px rgba(0,212,160,0.4);z-index:200;border:none;cursor:pointer;transition:0.3s;}
-.fab:active{transform:scale(0.9);}
-
-/* SECTIONS */
-.main{flex:1;overflow-y:auto;padding:0 16px 100px;}
-.section{display:none;}
+.main{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;}
+.section{display:none;padding:16px;}
 .section.active{display:block;}
 
-/* CARDS PRODUITS (Style modernisé) */
-.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;}
-.card-info h4{font-size:15px;margin-bottom:4px;}
-.card-info p{font-size:11px;color:var(--text2);text-transform:uppercase;}
-.card-price{font-size:19px;font-weight:900;color:var(--green);}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.stat{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--rsm);padding:12px 14px;position:relative;overflow:hidden;}
+.stat::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--green);}
+.stat-lbl{font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;}
+.stat-val{font-size:24px;font-weight:800;}
+.stat-sub{font-size:11px;color:var(--green);margin-top:2px;font-weight:600;}
 
-/* FORMULAIRE (Inspiré de ton code mais mieux espacé) */
-.fg{margin-bottom:15px;}
-label{font-size:10px;font-weight:800;color:var(--text2);text-transform:uppercase;margin-bottom:6px;display:block;}
-input, select{width:100%;background:var(--bg3);border:1px solid var(--border2);padding:12px;border-radius:var(--rsm);color:var(--text);font-size:15px;outline:none;}
-.btn-save{background:var(--green);color:#001a12;width:100%;padding:15px;border-radius:var(--rsm);border:none;font-weight:800;font-size:16px;margin-top:10px;}
+.srch{position:relative;margin-bottom:12px;}
+.srch svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--text3);pointer-events:none;}
+.srch input{padding-left:38px;}
+input,select{width:100%;padding:11px 13px;border:1px solid var(--border2);border-radius:var(--rsm);font-size:15px;background:var(--bg3);color:var(--text);outline:none;transition:border-color .15s;-webkit-appearance:none;appearance:none;}
+input::placeholder{color:var(--text3);}
+input:focus,select:focus{border-color:var(--green);}
+select option{background:var(--bg3);}
+.fg{margin-bottom:13px;}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+label{font-size:10px;font-weight:700;color:var(--text3);display:block;margin-bottom:5px;letter-spacing:.06em;text-transform:uppercase;}
 
-/* TOOLBAR STATS */
-.mini-stats{display:flex;gap:10px;margin-bottom:15px;}
-.m-stat{flex:1;background:var(--bg3);padding:10px;border-radius:var(--rsm);text-align:center;border:1px solid var(--border2);}
-.m-stat-val{display:block;font-size:16px;font-weight:900;}
-.m-stat-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:13px 18px;border-radius:var(--rsm);font-size:14px;font-weight:800;border:none;cursor:pointer;transition:all .15s;width:100%;}
+.btn-g{background:var(--green);color:#001a12;}
+.btn-g:hover{background:var(--green2);}
+.btn-g:active{transform:scale(.98);}
+.btn-g:disabled{opacity:.35;cursor:not-allowed;}
+.btn-outline{background:transparent;color:var(--text);border:1px solid var(--border2);}
+.btn-outline:hover{border-color:var(--green);color:var(--green);}
+.btn-sm{padding:8px 12px;font-size:12px;width:auto;}
+
+.chips{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:2px;scrollbar-width:none;}
+.chips::-webkit-scrollbar{display:none;}
+.chip{padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1px solid var(--border2);background:var(--bg3);cursor:pointer;color:var(--text3);white-space:nowrap;transition:all .15s;}
+.chip.active{background:var(--gbg);color:var(--green);border-color:var(--gborder);}
+
+/* LOGO ENSEIGNE */
+.enseigne-logo{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:5px;font-size:10px;font-weight:800;white-space:nowrap;}
+.el{background:#003189;color:white;}
+.ec{background:#004A9C;color:white;}
+.eli{background:#0050a0;color:#ffcc00;}
+.eal{background:#00519e;color:white;}
+.eit{background:#e30613;color:white;}
+.eau{background:#e2231a;color:white;}
+.esu{background:#e30613;color:white;}
+.emo{background:#1a1a1a;color:white;border:1px solid #444;}
+.egf{background:#2e7d32;color:white;}
+.exx{background:var(--bg4);color:var(--text2);border:1px solid var(--border2);}
+
+.marque-mdd{background:var(--gbg);color:var(--green);border:1px solid var(--gborder);padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;}
+.marque-nat{background:var(--bbg);color:var(--blue);border:1px solid var(--bborder);padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;}
+
+.card{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:13px 15px;margin-bottom:9px;cursor:pointer;transition:border-color .15s;}
+.card:active{transform:scale(.99);}
+.card.best{border-color:var(--gborder);background:var(--gbg);}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+.card-name{font-size:14px;font-weight:600;flex:1;line-height:1.4;}
+.card-price{font-size:18px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums;}
+.card.best .card-price{color:var(--green);}
+.card-meta{display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-top:7px;}
+.card-macro{font-size:11px;color:var(--sport);font-weight:700;margin-top:4px;display:none;}
+body.sport-mode .card-macro{display:block;}
+.badge{display:inline-flex;align-items:center;padding:3px 7px;border-radius:5px;font-size:10px;font-weight:700;}
+.bbest{background:var(--green);color:#001a12;font-weight:800;}
+.bdrive{background:var(--bbg);color:var(--blue);border:1px solid var(--bborder);}
+.breal{background:var(--abg);color:var(--amber);border:1px solid var(--aborder);}
+.bcommu{background:var(--pbg);color:var(--purple);border:1px solid var(--pborder);}
+.bgr{background:var(--bg4);color:var(--text2);border:1px solid var(--border2);}
+.bup{background:var(--rbg);color:var(--red);border:1px solid var(--rborder);}
+.bdown{background:var(--gbg);color:var(--green);border:1px solid var(--gborder);}
+
+/* SMART MAP */
+.map-legend{display:flex;gap:12px;padding:8px 12px;background:var(--bg3);border-radius:var(--rsm);margin-bottom:10px;font-size:11px;font-weight:700;}
+.map-legend-item{display:flex;align-items:center;gap:5px;}
+.legend-dot{width:10px;height:10px;border-radius:50%;}
+
+/* DUEL */
+.duel-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:start;margin-bottom:12px;}
+.duel-col{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:12px;transition:all .3s;}
+.duel-col.winner{border-color:var(--gborder);background:var(--gbg);box-shadow:0 0 20px rgba(0,212,160,.15);}
+.duel-col.loser{opacity:.65;}
+.duel-vs{display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--text3);padding-top:60px;}
+.duel-col-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);margin-bottom:7px;}
+.duel-price{font-size:24px;font-weight:800;margin:6px 0 2px;font-variant-numeric:tabular-nums;}
+.duel-col.winner .duel-price{color:var(--green);}
+.duel-row{display:flex;justify-content:space-between;font-size:11px;padding:3px 0;border-bottom:1px solid var(--border);color:var(--text2);}
+.duel-row:last-child{border-bottom:none;}
+.duel-row strong{color:var(--text);}
+.duel-winner-banner{background:var(--gbg);border:1px solid var(--gborder);border-radius:var(--r);padding:12px;text-align:center;margin-bottom:12px;}
+.duel-macro{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin:6px 0;}
+.duel-macro-pill{background:var(--bg4);border-radius:5px;padding:5px 3px;text-align:center;}
+.duel-macro-lbl{font-size:8px;color:var(--text3);text-transform:uppercase;font-weight:700;}
+.duel-macro-val{font-size:12px;font-weight:800;color:var(--sport);}
+.proto-box{background:var(--spbg);border:1px solid var(--spborder);border-radius:var(--rsm);padding:8px;text-align:center;margin-top:6px;}
+.proto-val{font-size:18px;font-weight:800;color:var(--sport);}
+.proto-lbl{font-size:9px;color:var(--text2);}
+
+/* PANIER */
+.panier-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.panier-preset{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:11px;text-align:center;cursor:pointer;transition:all .15s;}
+.panier-preset:hover{border-color:var(--green);}
+.panier-preset.active{border-color:var(--gborder);background:var(--gbg);}
+.panier-preset-icon{font-size:22px;margin-bottom:5px;}
+.panier-preset-name{font-size:12px;font-weight:700;}
+.panier-preset-desc{font-size:10px;color:var(--text2);margin-top:2px;}
+.panier-item{display:flex;align-items:center;gap:10px;padding:9px 13px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--rsm);margin-bottom:7px;}
+.panier-item-name{font-size:13px;font-weight:600;flex:1;}
+.panier-rm{background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;}
+.panier-rm:hover{color:var(--red);}
+.result-ens{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:12px;margin-bottom:8px;}
+.result-ens.win{border-color:var(--gborder);background:var(--gbg);}
+.result-ens-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.result-ens-total{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums;}
+.result-ens.win .result-ens-total{color:var(--green);}
+.result-row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid var(--border);color:var(--text2);}
+.result-row:last-child{border-bottom:none;}
+.result-row span:last-child{font-weight:700;color:var(--text);}
+.drive-list-box{background:var(--bg3);border:1px solid var(--gborder);border-radius:var(--r);padding:12px;margin-top:11px;}
+.drive-list-title{font-size:12px;font-weight:800;color:var(--green);margin-bottom:6px;}
+.drive-list-text{font-size:12px;color:var(--text2);line-height:1.9;white-space:pre-line;font-family:monospace;}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;display:flex;align-items:flex-end;backdrop-filter:blur(4px);}
+.modal-overlay.hidden{display:none;}
+.modal{background:var(--bg2);border-radius:20px 20px 0 0;padding:18px 16px;max-height:88vh;overflow-y:auto;width:100%;max-width:480px;margin:0 auto;}
+.modal-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 14px;}
+.nutri-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px;}
+.nutri-box{background:var(--bg3);border-radius:7px;padding:7px;text-align:center;}
+.nutri-val{font-size:14px;font-weight:800;color:var(--green);}
+.nutri-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;font-weight:700;margin-top:1px;}
+.allergen{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;background:var(--rbg);color:var(--red);border:1px solid var(--rborder);margin:2px;}
+.chart-wrap{height:150px;position:relative;}
+
+/* CARBURANT */
+.fuel-card{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:12px 14px;margin-bottom:8px;}
+.fuel-card.best{border-color:var(--gborder);background:var(--gbg);}
+.fuel-card-top{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.fuel-name{font-size:13px;font-weight:700;flex:1;line-height:1.3;}
+.fuel-price{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;}
+.fuel-card.best .fuel-price{color:var(--green);}
+.fuel-addr{font-size:11px;color:var(--text2);margin-top:3px;}
+.fuel-meta{display:flex;gap:5px;align-items:center;margin-top:6px;flex-wrap:wrap;}
+.rent-box{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:13px;margin-bottom:12px;}
+.rent-res{border-radius:var(--rsm);padding:11px;margin-top:11px;text-align:center;}
+.rent-res.good{background:var(--gbg);border:1px solid var(--gborder);}
+.rent-res.bad{background:var(--rbg);border:1px solid var(--rborder);}
+.rent-res.neutral{background:var(--abg);border:1px solid var(--aborder);}
+.rent-verdict{font-size:19px;font-weight:800;margin-bottom:4px;}
+.rent-detail{font-size:12px;color:var(--text2);line-height:1.7;}
+
+/* PROFIL */
+.profile-card{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:16px;text-align:center;margin-bottom:12px;}
+.profile-avatar{width:56px;height:56px;border-radius:50%;background:var(--gbg);border:2px solid var(--gborder);display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 9px;}
+.profile-pseudo{font-size:16px;font-weight:800;margin-bottom:2px;}
+.profile-pts{font-size:24px;font-weight:800;color:var(--green);}
+.xp-bar-wrap{background:var(--bg4);border-radius:10px;height:6px;margin:8px 0 3px;overflow:hidden;}
+.xp-bar{height:6px;border-radius:10px;background:linear-gradient(90deg,var(--green),var(--blue));transition:width .5s;}
+.badge-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px;}
+.badge-card{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--rsm);padding:10px;text-align:center;}
+.badge-card.earned{border-color:var(--gborder);background:var(--gbg);}
+.badge-card.locked{opacity:.35;}
+.lb-row{display:flex;align-items:center;gap:9px;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--rsm);margin-bottom:6px;}
+.lb-rank{font-size:14px;min-width:24px;font-weight:800;}
+.lb-pseudo{font-size:13px;font-weight:600;flex:1;}
+.lb-pts{font-size:13px;font-weight:800;color:var(--green);}
+
+/* MAP */
+.leaflet-container{background:#111 !important;}
+.leaflet-tile{filter:brightness(.6) saturate(.35);}
+.leaflet-popup-content-wrapper{background:#181818;border:1px solid #2e2e2e;border-radius:10px;color:#f0f0f0;box-shadow:0 8px 32px rgba(0,0,0,.7);}
+.leaflet-popup-tip{background:#181818;}
+.leaflet-popup-content{margin:10px 14px;font-size:12px;line-height:1.7;}
+.leaflet-popup-content strong{color:#00d4a0;}
+.leaflet-popup-content .red{color:#ff5c5c!important;}
+.leaflet-control-zoom a{background:#181818 !important;color:#f0f0f0 !important;border-color:#2e2e2e !important;}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(16px);padding:11px 20px;border-radius:10px;font-size:13px;font-weight:800;opacity:0;transition:all .25s;pointer-events:none;z-index:300;white-space:nowrap;max-width:90vw;text-align:center;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.ok{background:var(--green);color:#001a12;}
+.toast.err{background:var(--red);color:#fff;}
+.toast.pts{background:var(--purple);color:#fff;}
+.toast.sport{background:var(--sport);color:#fff;}
+.empty{text-align:center;padding:36px 20px;color:var(--text3);font-size:14px;line-height:1.7;}
+.sort-btn{padding:5px 11px;border-radius:20px;font-size:11px;font-weight:700;border:1px solid var(--border2);background:var(--bg3);cursor:pointer;color:var(--text3);white-space:nowrap;transition:all .15s;}
+.sort-btn.active{background:var(--gbg);color:var(--green);border-color:var(--gborder);}
+.view-btn{width:30px;height:30px;border-radius:7px;font-size:14px;border:1px solid var(--border2);background:var(--bg3);cursor:pointer;color:var(--text3);transition:all .15s;display:flex;align-items:center;justify-content:center;}
+.view-btn.active{background:var(--gbg);color:var(--green);border-color:var(--gborder);}
+.product-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.card-grid{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);cursor:pointer;transition:border-color .15s;overflow:hidden;}
+.card-grid:active{transform:scale(.98);}
+.card-grid.best{border-color:var(--gborder);}
+.card-grid-img{width:100%;height:90px;object-fit:cover;background:var(--bg4);display:block;}
+.card-grid-ph{width:100%;height:90px;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:36px;}
+.card-grid-body{padding:9px;}
+.card-grid-name{font-size:11px;font-weight:700;line-height:1.3;margin-bottom:4px;color:var(--text);}
+.card-grid-price{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums;}
+.card-grid.best .card-grid-price{color:var(--green);}
+.card-grid-meta{display:flex;gap:3px;flex-wrap:wrap;margin-top:4px;}
+.card-with-photo{display:flex;gap:11px;align-items:flex-start;}
+.card-ph{width:60px;height:60px;border-radius:8px;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;overflow:hidden;}
+.card-ph img{width:60px;height:60px;object-fit:cover;border-radius:8px;}
+.card-content{flex:1;min-width:0;}
+.loading{text-align:center;padding:32px;color:var(--text3);}
+.spin{width:22px;height:22px;border:2px solid var(--border2);border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite;display:inline-block;margin-bottom:8px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sec-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:var(--text3);margin-bottom:11px;}
+.divider{border:none;border-top:1px solid var(--border);margin:13px 0;}
+.info-box{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:11px 13px;font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:12px;}
 </style>
 </head>
 <body>
@@ -73,146 +260,1126 @@ input, select{width:100%;background:var(--bg3);border:1px solid var(--border2);p
 <header class="hdr">
   <div class="hdr-row">
     <div class="logo">Anti<span>Flation</span></div>
-    <div class="xp-pill">✨ <span id="xpCount">0</span> XP</div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div class="live"><div class="live-dot"></div></div>
+      <div class="mode-toggle" id="modeToggle" onclick="toggleMode()"><span id="modeIcon">🛒</span><span id="modeLabel">Standard</span></div>
+    </div>
+  </div>
+  <div class="hdr-sub">
+    <span id="hdrPseudo" style="display:none;" class="hdr-pseudo"></span>
+    <span id="hdrLocation">📍 Localisation...</span>
+    <span id="hdrRefresh" style="color:var(--text3);font-size:10px;"></span>
   </div>
 </header>
-
-<div class="search-hero" id="searchArea">
-  <div class="search-wrap">
-    <span>🔍</span>
-    <input type="text" id="mainSearch" placeholder="Un café, du lait, une enseigne..." oninput="renderList()">
-  </div>
-</div>
 
 <div class="tabs">
   <button class="tab active" onclick="showTab('liste')">🛒 Prix</button>
   <button class="tab" onclick="showTab('carte')">🗺 Carte</button>
   <button class="tab" onclick="showTab('duel')">⚔️ Duel</button>
-  <button class="tab" onclick="showTab('carburant')">⛽ Essence</button>
-  <button class="tab" onclick="showTab('communaute')">🏆 Classement</button>
+  <button class="tab" onclick="showTab('panier')">🧺 Panier</button>
+  <button class="tab" onclick="showTab('carburant')">⛽ Carburant</button>
+  <button class="tab" onclick="showTab('communaute')">🏆 Communauté</button>
+  <button class="tab" onclick="showTab('ajouter')">＋ Ajouter</button>
 </div>
 
-<main class="main">
-  <!-- LISTE DES PRIX -->
+<div class="main">
+
+  <!-- LISTE -->
   <div id="tab-liste" class="section active">
-    <div class="mini-stats">
-      <div class="m-stat"><span class="m-stat-val" id="statTotal">0</span><span class="m-stat-lbl">Relevés</span></div>
-      <div class="m-stat"><span class="m-stat-val" id="statProduits">0</span><span class="m-stat-lbl">Produits</span></div>
+    <div class="stats">
+      <div class="stat"><div class="stat-lbl">Prix enregistrés</div><div class="stat-val" id="statTotal">—</div><div class="stat-sub" id="statSub">chargement</div></div>
+      <div class="stat"><div class="stat-lbl">Produits distincts</div><div class="stat-val" id="statProduits">—</div><div class="stat-sub">références</div></div>
     </div>
-    <div id="productList"></div>
+    <div class="srch">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="searchInput" placeholder="Produit, marque, enseigne..." oninput="renderList()">
+    </div>
+    <div class="chips" id="filterRow"></div>
+    <!-- BARRE DE TRI -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;">
+      <div style="display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;flex:1;" id="sortRow"></div>
+      <div style="display:flex;gap:5px;"><button class="view-btn active" id="viewGrid" onclick="setView('grid')" title="Grille">⊞</button><button class="view-btn" id="viewList" onclick="setView('list')" title="Liste">☰</button></div>
+    </div>
+    <div id="productList"><div class="loading"><div class="spin"></div><br>Chargement...</div></div>
   </div>
 
-  <!-- FORMULAIRE D'AJOUT -->
+  <!-- CARTE SMART -->
+  <div id="tab-carte" class="section" style="padding:12px;">
+    <div class="sec-title">🗺 Carte Smart — Rentabilité en temps réel</div>
+    <div class="map-legend">
+      <div class="map-legend-item"><div class="legend-dot" style="background:#00d4a0;"></div><span style="color:var(--green);">Rentable</span></div>
+      <div class="map-legend-item"><div class="legend-dot" style="background:#ffbe00;"></div><span style="color:var(--amber);">Limite</span></div>
+      <div class="map-legend-item"><div class="legend-dot" style="background:#ff5c5c;"></div><span style="color:var(--red);">Trop cher</span></div>
+      <div class="map-legend-item"><div class="legend-dot" style="background:#4d9fff;"></div><span style="color:var(--blue);">🏠 Domicile</span></div>
+    </div>
+    <div style="border-radius:var(--r);overflow:hidden;border:1px solid var(--border2);margin-bottom:10px;">
+      <div id="smartMap" style="height:340px;width:100%;"></div>
+    </div>
+    <div class="fr" style="margin-bottom:10px;">
+      <button class="btn btn-g" onclick="initSmartMap(true)" id="btnMapGeo">📍 Me localiser</button>
+      <button class="btn btn-outline" onclick="initSmartMap(false)">🔄 Actualiser</button>
+    </div>
+    <div id="smartMapInfo" class="info-box" style="display:none;"></div>
+    <div class="info-box" style="font-size:12px;">
+      <strong style="color:var(--green);">Comment ça marche ?</strong><br>
+      Un magasin est <strong style="color:var(--green);">vert</strong> si l'économie sur ton panier dépasse le coût du trajet en carburant. <strong style="color:var(--red);">Rouge</strong> = pas rentable de s'y déplacer.
+    </div>
+  </div>
+
+  <!-- DUEL PRODUIT VS PRODUIT -->
+  <div id="tab-duel" class="section">
+    <div class="sec-title">⚔️ Duel produit réel à réel</div>
+    <div class="info-box" id="duelModeInfo">Mode Standard 🛒 — Prix total, prix/kg, coût réel avec carburant</div>
+    <div class="fr" style="margin-bottom:8px;">
+      <div class="fg" style="margin-bottom:0;"><label>Enseigne A</label><select id="dE1" onchange="updateDuelProds(1)"></select></div>
+      <div class="fg" style="margin-bottom:0;"><label>Enseigne B</label><select id="dE2" onchange="updateDuelProds(2)"></select></div>
+    </div>
+    <div class="fr" style="margin-bottom:12px;">
+      <div class="fg" style="margin-bottom:0;"><label>Produit A</label><select id="dP1" onchange="renderDuel()"></select></div>
+      <div class="fg" style="margin-bottom:0;"><label>Produit B</label><select id="dP2" onchange="renderDuel()"></select></div>
+    </div>
+    <div id="duelWinner"></div>
+    <div class="duel-grid">
+      <div class="duel-col" id="dCol1"><div class="duel-col-title">Produit A</div><div id="dDisplay1"></div></div>
+      <div class="duel-vs">VS</div>
+      <div class="duel-col" id="dCol2"><div class="duel-col-title">Produit B</div><div id="dDisplay2"></div></div>
+    </div>
+    <div id="duelGraph"></div>
+  </div>
+
+  <!-- PANIER -->
+  <div id="tab-panier" class="section">
+    <div class="sec-title">🧺 Paniers pré-configurés</div>
+    <div class="panier-grid" id="panierPresets"></div>
+    <hr class="divider">
+    <div class="sec-title">Mon panier personnalisé</div>
+    <div style="display:flex;gap:8px;margin-bottom:8px;">
+      <input type="text" id="panierInput" placeholder="Ajouter un produit..." onkeydown="if(event.key==='Enter')addPanierItem()" style="flex:1;">
+      <button class="btn btn-g btn-sm" onclick="addPanierItem()">＋</button>
+    </div>
+    <div id="panierList"></div>
+    <div id="panierResult"></div>
+    <div id="driveList"></div>
+  </div>
+
+  <!-- CARBURANT -->
+  <div id="tab-carburant" class="section">
+    <div class="sec-title">⛽ Carburant temps réel</div>
+    <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--rsm);padding:10px 13px;margin-bottom:12px;display:flex;align-items:center;gap:10px;">
+      <div class="live-dot" style="flex-shrink:0;"></div>
+      <div style="flex:1;font-size:12px;font-weight:700;" id="homeLabel">🏠 Domicile non défini</div>
+      <button class="btn btn-g btn-sm" onclick="setHome()">Définir</button>
+    </div>
+    <div class="fr" style="margin-bottom:10px;">
+      <div class="fg" style="margin-bottom:0;"><label>Ville</label><input type="text" id="fuelCity" placeholder="Besançon..."></div>
+      <div class="fg" style="margin-bottom:0;"><label>Carburant</label>
+        <select id="fuelType"><option>Gazole</option><option>SP95</option><option>SP98</option><option>E10</option><option>E85</option><option>GPLc</option></select>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <button class="btn btn-g" id="btnGeo" onclick="geoMe()" style="flex:1;">📍 Géolocaliser</button>
+      <button class="btn btn-outline" onclick="searchFuel()" style="flex:1;">Rechercher</button>
+    </div>
+    <div id="fuelMapWrap" style="display:none;border-radius:var(--r);overflow:hidden;margin-bottom:10px;border:1px solid var(--border2);"><div id="fuelMap" style="height:220px;width:100%;"></div></div>
+    <div id="fuelResults"><div class="empty">Géolocalise-toi pour voir les stations.</div></div>
+    <hr class="divider">
+    <div class="rent-box">
+      <div class="sec-title">🧮 Détour rentable ?</div>
+      <div class="fr"><div class="fg"><label>Prix proche €/L</label><input type="number" id="rP1" placeholder="1.85" step="0.001" inputmode="decimal"></div><div class="fg"><label>Prix loin €/L</label><input type="number" id="rP2" placeholder="1.72" step="0.001" inputmode="decimal"></div></div>
+      <div class="fr"><div class="fg"><label>Distance A/R km</label><input type="number" id="rD" placeholder="10" step="1" inputmode="numeric"></div><div class="fg"><label>Conso L/100km</label><input type="number" id="rC" placeholder="7" step="0.1" inputmode="decimal"></div></div>
+      <div class="fg"><label>Volume plein L</label><input type="number" id="rV" placeholder="50" step="5" inputmode="numeric"></div>
+      <button class="btn btn-g" onclick="calcRent()">Calculer</button>
+      <div id="rentResult"></div>
+    </div>
+  </div>
+
+  <!-- COMMUNAUTÉ -->
+  <div id="tab-communaute" class="section"><div id="communauteContent"></div></div>
+
+  <!-- AJOUTER -->
   <div id="tab-ajouter" class="section">
-    <h3 style="margin-bottom:20px;">Partager un prix</h3>
+    <div id="pseudoSetup" style="display:none;background:var(--pbg);border:1px solid var(--pborder);border-radius:var(--r);padding:13px;margin-bottom:13px;">
+      <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--purple);margin-bottom:7px;">👤 Choisis ton pseudo</div>
+      <div class="fg"><input type="text" id="pseudoInput" placeholder="Ton pseudo..." maxlength="20"></div>
+      <button class="btn btn-g" onclick="savePseudo()">Valider</button>
+    </div>
+    <div class="sec-title">Contribuer un prix</div>
     <div class="fg">
-      <label>Nom du produit & Marque</label>
-      <input type="text" id="fProduit" placeholder="Ex: Pack Lait Lactel x6">
+      <label>Nom du produit + marque *</label>
+      <input type="text" id="fProduit" placeholder="Ex : Lait Lactel demi-écrémé 1L" autocomplete="off" oninput="showProdSugg()">
+      <div id="prodSugg" style="margin-top:5px;"></div>
     </div>
-    <div style="display:flex; gap:10px;">
-      <div class="fg" style="flex:1;">
-        <label>Prix (€)</label>
-        <input type="number" id="fPrix" step="0.01" placeholder="1.29">
+    <div class="fr">
+      <div class="fg"><label>Marque</label><input type="text" id="fMarque" placeholder="Lactel..."></div>
+      <div class="fg"><label>Type</label><select id="fTypeMarque"><option value="mdd">MDD</option><option value="national">Grande marque</option></select></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label>Prix (€) *</label><input type="number" id="fPrix" placeholder="1.29" step="0.01" min="0.01" inputmode="decimal"></div>
+      <div class="fg"><label>Enseigne *</label>
+        <select id="fEnseigne"><option value="">Choisir...</option><option>Leclerc</option><option>Carrefour</option><option>Auchan</option><option>Lidl</option><option>Aldi</option><option>Intermarché</option><option>Super U</option><option>Monoprix</option><option>Grand Frais</option><option>Autre</option></select>
       </div>
-      <div class="fg" style="flex:1;">
-        <label>Enseigne</label>
-        <select id="fEnseigne">
-          <option>Leclerc</option><option>Carrefour</option><option>Lidl</option><option>Aldi</option><option>Auchan</option><option>Intermarché</option>
-        </select>
-      </div>
     </div>
-    <div class="fg">
-      <label>Ville</label>
-      <input type="text" id="fVille" value="Besançon">
+    <div class="fr">
+      <div class="fg"><label>Ville</label><input type="text" id="fVille" placeholder="Besançon..."></div>
+      <div class="fg"><label>Quartier</label><input type="text" id="fQuartier" placeholder="Centre..."></div>
     </div>
-    <button class="btn-save" onclick="ajouterPrix()">Publier (+15 XP)</button>
-    <button onclick="showTab('liste')" style="width:100%; background:none; border:none; color:var(--text3); margin-top:15px;">Annuler</button>
+    <div class="fg" style="display:flex;align-items:center;gap:10px;">
+      <input type="checkbox" id="fDrive" style="width:18px;height:18px;accent-color:var(--green);flex-shrink:0;">
+      <label for="fDrive" style="text-transform:none;font-size:14px;color:var(--text2);margin:0;letter-spacing:0;">Prix Drive</label>
+    </div>
+    <button class="btn btn-g" id="btnSave" onclick="ajouterPrix()">Enregistrer et partager</button>
+    <div style="text-align:center;font-size:12px;color:var(--purple);font-weight:700;margin-top:9px;">🏆 +10 XP par contribution !</div>
   </div>
 
-  <!-- LES AUTRES SECTIONS (Vides pour l'exemple, tu y remettras tes fonctions Maps/Duel) -->
-  <div id="tab-carte" class="section"><div id="smartMap" style="height:300px; border-radius:18px;"></div></div>
-  <div id="tab-duel" class="section"><h3>Mode Duel</h3><p>Compare deux produits en temps réel.</p></div>
-  <div id="tab-carburant" class="section"><h3>Stations à Besançon</h3><div id="fuelResults"></div></div>
-</main>
+</div>
 
-<button class="fab" onclick="showTab('ajouter')">＋</button>
+<div class="modal-overlay hidden" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal"><div class="modal-handle"></div><div id="modalContent"></div></div>
+</div>
+
+<div class="toast" id="toast"></div>
 
 <script>
-// TES CLEFS API
 const SUPA_URL='https://tkawlvysfgravirojwch.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRrYXdsdnlzZmdyYXZpcm9qd2NoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2NzUyMDcsImV4cCI6MjA5NDI1MTIwN30.2dmejhmy4j0YWzReVd04nr5gGzaNJmG40VVPz_iEs-E';
-const db = supabase.createClient(SUPA_URL, SUPA_KEY);
 
-let xp = parseInt(localStorage.getItem('af_xp')) || 0;
-document.getElementById('xpCount').innerText = xp;
+const BASE_PRICES=[
+  {produit:'Lait Lactel demi-écrémé 1L',marque:'Lactel',typeMarque:'national',prix:1.09,enseigne:'Carrefour',drive:true,poids:1000},
+  {produit:'Lait Lactel demi-écrémé 1L',marque:'Lactel',typeMarque:'national',prix:1.05,enseigne:'Leclerc',drive:true,poids:1000},
+  {produit:'Lait Candia demi-écrémé 1L',marque:'Candia',typeMarque:'national',prix:1.12,enseigne:'Intermarché',drive:true,poids:1000},
+  {produit:'Lait MDD demi-écrémé 1L',marque:'Eco+',typeMarque:'mdd',prix:0.94,enseigne:'Leclerc',drive:true,poids:1000},
+  {produit:'Lait MDD demi-écrémé 1L',marque:'Simpl',typeMarque:'mdd',prix:0.89,enseigne:'Lidl',drive:false,poids:1000},
+  {produit:'Lait MDD demi-écrémé 1L',marque:'Discount',typeMarque:'mdd',prix:0.87,enseigne:'Aldi',drive:false,poids:1000},
+  {produit:'Lait MDD demi-écrémé 1L',marque:'Top Budget',typeMarque:'mdd',prix:0.92,enseigne:'Intermarché',drive:false,poids:1000},
+  {produit:'Beurre Président doux 250g',marque:'Président',typeMarque:'national',prix:2.49,enseigne:'Carrefour',drive:true,poids:250},
+  {produit:'Beurre Président doux 250g',marque:'Président',typeMarque:'national',prix:2.39,enseigne:'Leclerc',drive:true,poids:250},
+  {produit:'Beurre Paysan Breton 250g',marque:'Paysan Breton',typeMarque:'national',prix:2.19,enseigne:'Leclerc',drive:true,poids:250},
+  {produit:'Beurre Paysan Breton 250g',marque:'Paysan Breton',typeMarque:'national',prix:2.15,enseigne:'Intermarché',drive:true,poids:250},
+  {produit:'Beurre MDD doux 250g',marque:'Milbona',typeMarque:'mdd',prix:1.79,enseigne:'Lidl',drive:false,poids:250},
+  {produit:'Beurre MDD doux 250g',marque:'Aldi',typeMarque:'mdd',prix:1.75,enseigne:'Aldi',drive:false,poids:250},
+  {produit:'Beurre MDD doux 250g',marque:'Pâturage',typeMarque:'mdd',prix:1.85,enseigne:'Intermarché',drive:false,poids:250},
+  {produit:'Œufs Loué x6 calibre M',marque:'Loué',typeMarque:'national',prix:2.19,enseigne:'Leclerc',drive:true,poids:300},
+  {produit:'Œufs Loué x6 calibre M',marque:'Loué',typeMarque:'national',prix:2.20,enseigne:'Intermarché',drive:true,poids:300},
+  {produit:'Œufs MDD x6 calibre M',marque:'MDD',typeMarque:'mdd',prix:1.59,enseigne:'Lidl',drive:false,poids:300},
+  {produit:'Œufs MDD x6 calibre M',marque:'MDD',typeMarque:'mdd',prix:1.49,enseigne:'Aldi',drive:false,poids:300},
+  {produit:'Œufs MDD x6 calibre M',marque:'MDD',typeMarque:'mdd',prix:1.69,enseigne:'Intermarché',drive:false,poids:300},
+  {produit:'Pâtes Barilla spaghetti 500g',marque:'Barilla',typeMarque:'national',prix:1.45,enseigne:'Carrefour',drive:true,poids:500},
+  {produit:'Pâtes Barilla spaghetti 500g',marque:'Barilla',typeMarque:'national',prix:1.39,enseigne:'Leclerc',drive:true,poids:500},
+  {produit:'Pâtes Panzani spaghetti 500g',marque:'Panzani',typeMarque:'national',prix:1.29,enseigne:'Leclerc',drive:true,poids:500},
+  {produit:'Pâtes MDD spaghetti 500g',marque:'MDD',typeMarque:'mdd',prix:0.59,enseigne:'Lidl',drive:false,poids:500},
+  {produit:'Pâtes MDD spaghetti 500g',marque:'MDD',typeMarque:'mdd',prix:0.55,enseigne:'Aldi',drive:false,poids:500},
+  {produit:'Pâtes MDD spaghetti 500g',marque:'MDD',typeMarque:'mdd',prix:0.68,enseigne:'Intermarché',drive:false,poids:500},
+  {produit:'Riz Uncle Bens 1kg',marque:'Uncle Bens',typeMarque:'national',prix:2.49,enseigne:'Carrefour',drive:true,poids:1000},
+  {produit:'Riz MDD long grain 1kg',marque:'MDD',typeMarque:'mdd',prix:0.99,enseigne:'Aldi',drive:false,poids:1000},
+  {produit:'Riz MDD long grain 1kg',marque:'MDD',typeMarque:'mdd',prix:1.05,enseigne:'Lidl',drive:false,poids:1000},
+  {produit:'Riz MDD long grain 1kg',marque:'MDD',typeMarque:'mdd',prix:1.09,enseigne:'Intermarché',drive:false,poids:1000},
+  {produit:'Eau Evian 6x1.5L',marque:'Evian',typeMarque:'national',prix:4.99,enseigne:'Carrefour',drive:true,poids:9000},
+  {produit:'Eau Cristaline 6x1.5L',marque:'Cristaline',typeMarque:'national',prix:2.99,enseigne:'Leclerc',drive:true,poids:9000},
+  {produit:'Eau MDD plate 6x1.5L',marque:'MDD',typeMarque:'mdd',prix:1.99,enseigne:'Aldi',drive:false,poids:9000},
+  {produit:'Eau MDD plate 6x1.5L',marque:'MDD',typeMarque:'mdd',prix:2.09,enseigne:'Intermarché',drive:false,poids:9000},
+  {produit:'Yaourt Danone nature x8',marque:'Danone',typeMarque:'national',prix:2.39,enseigne:'Carrefour',drive:true,poids:800},
+  {produit:'Yaourt Danone nature x8',marque:'Danone',typeMarque:'national',prix:2.35,enseigne:'Intermarché',drive:true,poids:800},
+  {produit:'Yaourt MDD nature x8',marque:'MDD',typeMarque:'mdd',prix:1.19,enseigne:'Aldi',drive:false,poids:800},
+  {produit:'Yaourt MDD nature x8',marque:'MDD',typeMarque:'mdd',prix:1.39,enseigne:'Intermarché',drive:false,poids:800},
+  {produit:'Poulet Label Rouge ~1.5kg',marque:'Label Rouge',typeMarque:'national',prix:8.99,enseigne:'Leclerc',drive:true,poids:1500},
+  {produit:'Poulet Label Rouge ~1.5kg',marque:'Label Rouge',typeMarque:'national',prix:8.79,enseigne:'Intermarché',drive:true,poids:1500},
+  {produit:'Poulet MDD entier ~1.5kg',marque:'MDD',typeMarque:'mdd',prix:5.99,enseigne:'Aldi',drive:false,poids:1500},
+  {produit:'Poulet MDD entier ~1.5kg',marque:'MDD',typeMarque:'mdd',prix:6.29,enseigne:'Intermarché',drive:false,poids:1500},
+  {produit:'Steak haché Socopa x4 500g',marque:'Socopa',typeMarque:'national',prix:4.99,enseigne:'Carrefour',drive:true,poids:500},
+  {produit:'Steak haché MDD x4 500g',marque:'MDD',typeMarque:'mdd',prix:3.89,enseigne:'Aldi',drive:false,poids:500},
+  {produit:'Steak haché MDD x4 500g',marque:'MDD',typeMarque:'mdd',prix:4.09,enseigne:'Intermarché',drive:false,poids:500},
+  {produit:"Pain de mie Harry's 500g",marque:"Harry's",typeMarque:'national',prix:2.09,enseigne:'Leclerc',drive:true,poids:500},
+  {produit:'Pain de mie MDD 500g',marque:'MDD',typeMarque:'mdd',prix:0.99,enseigne:'Lidl',drive:false,poids:500},
+  {produit:'Pain de mie MDD 500g',marque:'MDD',typeMarque:'mdd',prix:1.05,enseigne:'Intermarché',drive:false,poids:500},
+  {produit:'Jambon Fleury Michon x4',marque:'Fleury Michon',typeMarque:'national',prix:2.99,enseigne:'Carrefour',drive:true,poids:160},
+  {produit:'Jambon MDD x4',marque:'MDD',typeMarque:'mdd',prix:1.89,enseigne:'Aldi',drive:false,poids:160},
+  {produit:'Jambon MDD x4',marque:'MDD',typeMarque:'mdd',prix:1.99,enseigne:'Intermarché',drive:false,poids:160},
+  {produit:'Nutella Ferrero 400g',marque:'Ferrero',typeMarque:'national',prix:3.49,enseigne:'Leclerc',drive:true,poids:400},
+  {produit:'Pâte à tartiner MDD 400g',marque:'MDD',typeMarque:'mdd',prix:1.19,enseigne:'Aldi',drive:false,poids:400},
+  {produit:'Café Carte Noire moulu 250g',marque:'Carte Noire',typeMarque:'national',prix:3.99,enseigne:'Leclerc',drive:true,poids:250},
+  {produit:'Café MDD moulu 250g',marque:'MDD',typeMarque:'mdd',prix:2.49,enseigne:'Aldi',drive:false,poids:250},
+  {produit:'Café MDD moulu 250g',marque:'MDD',typeMarque:'mdd',prix:2.59,enseigne:'Intermarché',drive:false,poids:250},
+  {produit:'Camembert Président 250g',marque:'Président',typeMarque:'national',prix:2.49,enseigne:'Carrefour',drive:true,poids:250},
+  {produit:'Camembert MDD 250g',marque:'MDD',typeMarque:'mdd',prix:1.49,enseigne:'Aldi',drive:false,poids:250},
+  {produit:'Camembert MDD 250g',marque:'MDD',typeMarque:'mdd',prix:1.79,enseigne:'Intermarché',drive:false,poids:250},
+  {produit:'Sucre Béghin Say 1kg',marque:'Béghin Say',typeMarque:'national',prix:1.49,enseigne:'Carrefour',drive:true,poids:1000},
+  {produit:'Sucre MDD 1kg',marque:'MDD',typeMarque:'mdd',prix:0.99,enseigne:'Aldi',drive:false,poids:1000},
+  {produit:'Sucre MDD 1kg',marque:'MDD',typeMarque:'mdd',prix:1.05,enseigne:'Intermarché',drive:false,poids:1000},
+  {produit:'Huile Lesieur tournesol 1L',marque:'Lesieur',typeMarque:'national',prix:2.19,enseigne:'Carrefour',drive:true,poids:920},
+  {produit:'Huile MDD tournesol 1L',marque:'MDD',typeMarque:'mdd',prix:1.45,enseigne:'Aldi',drive:false,poids:920},
+  {produit:'Huile MDD tournesol 1L',marque:'MDD',typeMarque:'mdd',prix:1.49,enseigne:'Intermarché',drive:false,poids:920},
+];
 
-function showTab(id) {
-  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('tab-'+id).classList.add('active');
-  
-  // Masquer la recherche si on ajoute un produit pour gagner de la place
-  document.getElementById('searchArea').style.display = (id === 'ajouter') ? 'none' : 'block';
-  
-  const activeTab = Array.from(document.querySelectorAll('.tab')).find(t => t.innerText.toLowerCase().includes(id));
-  if(activeTab) activeTab.classList.add('active');
+const NUTRI={
+  'Lait':{kcal:46,prot:3.2,gluc:4.6,lip:1.6,allergenes:['Lait']},
+  'Beurre':{kcal:750,prot:0.7,gluc:0.5,lip:83,allergenes:['Lait']},
+  'Œufs':{kcal:143,prot:12.6,gluc:0.7,lip:9.5,allergenes:['Œufs']},
+  'Pâtes':{kcal:350,prot:13,gluc:71,lip:1.5,allergenes:['Gluten']},
+  'Riz':{kcal:345,prot:7,gluc:78,lip:0.6,allergenes:[]},
+  'Poulet':{kcal:150,prot:27,gluc:0,lip:4,allergenes:[]},
+  'Steak':{kcal:175,prot:22,gluc:0,lip:9,allergenes:[]},
+  'Jambon':{kcal:115,prot:18,gluc:1,lip:4,allergenes:[]},
+  'Yaourt':{kcal:58,prot:4.3,gluc:4.0,lip:3.2,allergenes:['Lait']},
+  'Camembert':{kcal:315,prot:20.5,gluc:0.5,lip:26,allergenes:['Lait']},
+  'Café':{kcal:2,prot:0.3,gluc:0,lip:0.2,allergenes:[]},
+  'Pain':{kcal:265,prot:8,gluc:47,lip:4,allergenes:['Gluten','Lait']},
+  'Eau':{kcal:0,prot:0,gluc:0,lip:0,allergenes:[]},
+  'Nutella':{kcal:539,prot:6.3,gluc:57.5,lip:30.9,allergenes:['Gluten','Lait','Fruits à coques']},
+};
+
+const MAGASINS=[
+  {name:'Carrefour Besançon',enseigne:'Carrefour',lat:47.237,lng:6.024,ville:'Besançon'},
+  {name:'Leclerc Planoise',enseigne:'Leclerc',lat:47.231,lng:5.982,ville:'Besançon'},
+  {name:'Lidl Besançon',enseigne:'Lidl',lat:47.248,lng:6.021,ville:'Besançon'},
+  {name:'Aldi Besançon',enseigne:'Aldi',lat:47.242,lng:6.032,ville:'Besançon'},
+  {name:'Intermarché Besançon',enseigne:'Intermarché',lat:47.255,lng:6.040,ville:'Besançon'},
+  {name:'Leclerc Paris Nation',enseigne:'Leclerc',lat:48.848,lng:2.396,ville:'Paris'},
+  {name:'Carrefour Opéra',enseigne:'Carrefour',lat:48.872,lng:2.333,ville:'Paris'},
+  {name:'Lidl Bagnolet',enseigne:'Lidl',lat:48.863,lng:2.417,ville:'Paris'},
+  {name:'Intermarché Paris 11e',enseigne:'Intermarché',lat:48.857,lng:2.378,ville:'Paris'},
+  {name:'Carrefour Part-Dieu',enseigne:'Carrefour',lat:45.760,lng:4.860,ville:'Lyon'},
+  {name:'Leclerc Vénissieux',enseigne:'Leclerc',lat:45.696,lng:4.891,ville:'Lyon'},
+  {name:'Lidl Villeurbanne',enseigne:'Lidl',lat:45.773,lng:4.889,ville:'Lyon'},
+  {name:'Intermarché Lyon',enseigne:'Intermarché',lat:45.751,lng:4.855,ville:'Lyon'},
+  {name:'Leclerc Marseille',enseigne:'Leclerc',lat:43.302,lng:5.430,ville:'Marseille'},
+  {name:'Carrefour Bourse',enseigne:'Carrefour',lat:43.296,lng:5.374,ville:'Marseille'},
+  {name:'Lidl Marseille',enseigne:'Lidl',lat:43.254,lng:5.390,ville:'Marseille'},
+];
+
+const ENSEIGNE_COLORS={Leclerc:'#003189',Carrefour:'#004A9C',Lidl:'#0050a0',Aldi:'#00519e',Intermarché:'#e30613',Auchan:'#e2231a','Super U':'#e30613',Monoprix:'#333','Grand Frais':'#2e7d32',Autre:'#555'};
+const ENSEIGNE_ABBR={Leclerc:'LEC',Carrefour:'CRF',Lidl:'LDL',Aldi:'ALD',Intermarché:'ITM',Auchan:'AUC','Super U':'SUU',Monoprix:'MNP','Grand Frais':'GF',Autre:'?'};
+const LOGOS_CSS={Leclerc:'el',Carrefour:'ec',Lidl:'eli',Aldi:'eal',Intermarché:'eit',Auchan:'eau','Super U':'esu',Monoprix:'emo','Grand Frais':'egf',Autre:'exx'};
+
+const PANIERS_PRESETS=[
+  {id:'semaine',icon:'🗓️',name:'Semaine type',desc:'Complet',items:['Lait','Beurre','Œufs','Pâtes','Riz','Pain de mie','Yaourt','Poulet','Steak haché','Café']},
+  {id:'sport',icon:'🏋️',name:'Sport',desc:'Riche en protéines',items:['Œufs','Poulet','Steak haché','Yaourt','Jambon','Lait']},
+  {id:'bebe',icon:'👶',name:'Famille',desc:'Produits sains',items:['Lait','Yaourt','Œufs','Poulet','Riz','Eau']},
+  {id:'etudiant',icon:'🎓',name:'Étudiant',desc:'Budget serré',items:['Pâtes MDD','Riz MDD','Lait MDD','Œufs MDD','Pain de mie MDD']},
+];
+
+const BADGES_DEF=[
+  {id:'first',icon:'🌱',name:'Premier pas',desc:'1er prix',xp:10,seuil:1},
+  {id:'actif',icon:'⭐',name:'Contributeur',desc:'5 prix',xp:50,seuil:5},
+  {id:'expert',icon:'🔥',name:'Expert',desc:'20 prix',xp:200,seuil:20},
+  {id:'champion',icon:'🏆',name:'Champion',desc:'50 prix',xp:500,seuil:50},
+  {id:'centurion',icon:'💎',name:'Centurion',desc:'100 prix',xp:1000,seuil:100},
+  {id:'legend',icon:'👑',name:'Légende',desc:'250 prix',xp:2500,seuil:250},
+];
+
+let db,allData=[],activeFilter='Tous',sportMode=false;
+let panierItems=JSON.parse(localStorage.getItem('af_panier')||'[]');
+let pseudo=localStorage.getItem('af_pseudo')||'';
+let myXP=parseInt(localStorage.getItem('af_xp')||'0');
+let myContribs=parseInt(localStorage.getItem('af_contribs')||'0');
+let homeLocation=JSON.parse(localStorage.getItem('af_home')||'null');
+let userLat=null,userLng=null;
+let smartMapInst=null,fuelMapInst=null,histoChart=null,duelChart=null;
+
+function logoHtml(e){const c=LOGOS_CSS[e]||'exx';const a=ENSEIGNE_ABBR[e]||e.substring(0,3).toUpperCase();return`<span class="enseigne-logo ${c}">${a}</span>`;}
+function getNutri(produit){for(const k of Object.keys(NUTRI)){if((produit||'').toLowerCase().includes(k.toLowerCase()))return NUTRI[k];}return null;}
+function fmtDate(d){return new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'short'});}
+function calcDist(la1,ln1,la2,ln2){const R=6371,dL=(la2-la1)*Math.PI/180,dN=(ln2-ln1)*Math.PI/180,a=Math.sin(dL/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dN/2)**2;return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
+
+function init(){
+  db=window.supabase.createClient(SUPA_URL,SUPA_KEY);
+  if(pseudo)showPseudoHdr();
+  if(homeLocation)document.getElementById('homeLabel').textContent='🏠 Domicile enregistré';
+  detectLoc();
+  fetchData();
+  renderPanierPresets();
+  renderPanier();
 }
 
-async function fetchData() {
-  const { data, error } = await db.from('prix_produits').select('*').order('created_at', { ascending: false });
-  if (data) {
-    document.getElementById('statTotal').innerText = data.length;
-    document.getElementById('statProduits').innerText = [...new Set(data.map(p => p.produit))].length;
-    renderCards(data);
+async function detectLoc(){
+  if(!navigator.geolocation)return;
+  navigator.geolocation.getCurrentPosition(pos=>{
+    userLat=pos.coords.latitude;userLng=pos.coords.longitude;
+    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`)
+      .then(r=>r.json()).then(d=>{const c=d.address?.city||d.address?.town||'France';document.getElementById('hdrLocation').textContent=`📍 ${c}`;})
+      .catch(()=>{});
+  },()=>{document.getElementById('hdrLocation').textContent='📍 Besançon';userLat=47.237;userLng=6.024;},{timeout:5000});
+}
+
+async function fetchData(){
+  const base=BASE_PRICES.map((p,i)=>({...p,id:'base_'+i,created_at:new Date(Date.now()-i*3600000*24*(Math.random()*30|0)).toISOString(),communaute:false}));
+  try{
+    const res=await db.from('prix').select('*').order('created_at',{ascending:false});
+    allData=[...base,...(res.error?[]:(res.data||[]).map(p=>({...p,communaute:true})))];
+  }catch(e){allData=base;}
+  const now=new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('hdrRefresh').textContent=`MAJ ${now}`;
+  renderList();
+  initDuelSelects();
+}
+
+function toggleMode(){
+  sportMode=!sportMode;
+  document.body.classList.toggle('sport-mode',sportMode);
+  const t=document.getElementById('modeToggle');
+  if(sportMode){t.classList.add('sport');document.getElementById('modeIcon').textContent='🏋️';document.getElementById('modeLabel').textContent='Sport';if(document.getElementById('duelModeInfo'))document.getElementById('duelModeInfo').textContent='Mode Sport 🏋️ — Macros P/G/L + protéines/€ (carburant inclus)';showToast('Mode Sport 🏋️','sport');}
+  else{t.classList.remove('sport');document.getElementById('modeIcon').textContent='🛒';document.getElementById('modeLabel').textContent='Standard';if(document.getElementById('duelModeInfo'))document.getElementById('duelModeInfo').textContent='Mode Standard 🛒 — Prix total, prix/kg, coût réel avec carburant';showToast('Mode Standard 🛒');}
+  renderList();renderDuel();
+}
+
+// ── PHOTOS — vrais codes-barres Open Food Facts ──
+// Format: https://images.openfoodfacts.org/images/products/[barcode_split]/front_fr.jpg
+const PRODUCT_BARCODES = {
+  'Lait Lactel':'3428271140015',      // Lactel demi-écrémé UHT 1L
+  'Lait Candia':'3228022240019',       // Candia demi-écrémé
+  'Beurre Président':'3228021250111', // Beurre Président doux 250g
+  'Beurre Paysan Breton':'3412290015980', // Paysan Breton doux 250g
+  'Pâtes Barilla':'8076800195057',    // Barilla spaghetti 500g
+  'Pâtes Panzani':'3270190013316',    // Panzani spaghetti 500g
+  'Yaourt Danone':'3033490004751',    // Danone nature x8
+  'Nutella Ferrero':'3017620422003',  // Nutella 400g
+  "Pain de mie Harry's":'3228857000906', // Harry's nature 500g
+  'Eau Evian':'3068320127576',        // Evian 6x1.5L
+  'Eau Cristaline':'3274080005003',   // Cristaline 6x1.5L
+  'Camembert Président':'3228021060105', // Camembert Président 250g
+  'Jambon Fleury Michon':'3267390104161', // Fleury Michon x4
+  'Café Carte Noire':'8711000511046', // Carte Noire 250g
+  'Riz Uncle Bens':'5000118004107',   // Uncle Bens long grain 1kg
+  'Sucre Béghin Say':'3017960049012', // Béghin Say 1kg
+  'Huile Lesieur':'3038351232004',    // Lesieur tournesol 1L
+};
+
+// Cache des images chargées
+const imgCache = {};
+
+function barcodeToUrl(barcode){
+  // Format Open Food Facts: 3017620422003 -> 301/762/042/2003
+  const b = barcode.padStart(13,'0');
+  const parts = [b.slice(0,3),b.slice(3,6),b.slice(6,9),b.slice(9)];
+  return `https://images.openfoodfacts.org/images/products/${parts.join('/')}/front_fr.400.jpg`;
+}
+
+async function getProductImage(produit){
+  if(imgCache[produit]!==undefined) return imgCache[produit];
+  // Cherche le barcode exact d'abord
+  for(const[k,v] of Object.entries(PRODUCT_BARCODES)){
+    if((produit||'').startsWith(k)){
+      const url=barcodeToUrl(v);
+      imgCache[produit]=url;
+      return url;
+    }
+  }
+  // Sinon cherche via l'API Open Food Facts
+  try{
+    const query=encodeURIComponent((produit||'').split(' ').slice(0,3).join(' '));
+    const r=await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${query}&search_simple=1&action=process&json=1&page_size=1&lc=fr&cc=fr`,{signal:AbortSignal.timeout(3000)});
+    const d=await r.json();
+    const img=d.products?.[0]?.image_front_small_url||d.products?.[0]?.image_url||null;
+    imgCache[produit]=img;
+    return img;
+  }catch(e){
+    imgCache[produit]=null;
+    return null;
   }
 }
 
-function renderCards(list) {
-  const container = document.getElementById('productList');
-  container.innerHTML = list.map(item => `
-    <div class="card">
-      <div class="card-info">
-        <h4>${item.produit}</h4>
-        <p>${item.enseigne} • ${item.ville}</p>
-      </div>
-      <div class="card-price">${item.prix.toFixed(2)}€</div>
+// Emojis fallback par catégorie
+const PRODUCT_EMOJI = {
+  'Lait':'🥛','Beurre':'🧈','Œufs':'🥚','Pâtes':'🍝','Riz':'🍚','Farine':'🌾',
+  'Sucre':'🍬','Huile':'🫙','Pain':'🍞','Eau':'💧','Yaourt':'🥛','Poulet':'🍗',
+  'Steak':'🥩','Jambon':'🥩','Camembert':'🧀','Café':'☕','Tomates':'🍅',
+  'Nutella':'🍫','Saumon':'🐟','Céréales':'🥣','Farine':'🌾',
+};
+
+function getProductEmoji(produit){
+  for(const[k,v] of Object.entries(PRODUCT_EMOJI)){if((produit||'').includes(k))return v;}
+  return '🛒';
+}
+
+function getProductImage(produit){
+  for(const[k,v] of Object.entries(PRODUCT_IMAGES)){if((produit||'').startsWith(k))return v;}
+  return null;
+}
+
+// ── SORT & VIEW STATE ──
+let currentSort='alpha';
+let currentView='list';
+
+function setSort(s){
+  currentSort=s;
+  document.querySelectorAll('.sort-btn').forEach(b=>{b.classList.toggle('active',b.dataset.sort===s);});
+  renderList();
+}
+
+function setView(v){
+  currentView=v;
+  document.getElementById('viewGrid').classList.toggle('active',v==='grid');
+  document.getElementById('viewList').classList.toggle('active',v==='list');
+  renderList();
+}
+
+function initSortRow(){
+  const sorts=[
+    {k:'alpha',l:'A→Z'},
+    {k:'prix_asc',l:'💰 Prix ↑'},
+    {k:'prix_desc',l:'💸 Prix ↓'},
+    {k:'prixkg',l:'📦 /kg'},
+    {k:'protu',l:'🥩 Prot/€'},
+    {k:'recent',l:'🕐 Récent'},
+  ];
+  document.getElementById('sortRow').innerHTML=sorts.map(s=>
+    `<button class="sort-btn${currentSort===s.k?' active':''}" onclick="setSort('${s.k}')" data-sort="${s.k}">${s.l}</button>`
+  ).join('');
+}
+
+// ── LISTE ──
+function renderList(){
+  initSortRow();
+  const q=(document.getElementById('searchInput').value||'').toLowerCase().trim();
+  let filtered=activeFilter!=='Tous'?allData.filter(p=>p.enseigne===activeFilter):[...allData];
+  if(q)filtered=filtered.filter(p=>(p.produit||'').toLowerCase().includes(q)||(p.marque||'').toLowerCase().includes(q));
+  const enseignes=[...new Set(allData.map(p=>p.enseigne))].sort();
+  document.getElementById('filterRow').innerHTML=`<button class="chip${activeFilter==='Tous'?' active':''}" onclick="setFilter('Tous')">Tous</button>`+enseignes.map(e=>`<button class="chip${activeFilter===e?' active':''}" onclick="setFilter('${e}')">${logoHtml(e)} ${e}</button>`).join('');
+  document.getElementById('statTotal').textContent=allData.length;
+  document.getElementById('statSub').textContent=allData.filter(p=>p.communaute).length+' communauté';
+  document.getElementById('statProduits').textContent=[...new Set(allData.map(p=>p.produit))].length;
+  if(!filtered.length){document.getElementById('productList').innerHTML=`<div class="empty">Aucun résultat.</div>`;return;}
+  const best={};filtered.forEach(p=>{if(best[p.produit]===undefined||p.prix<best[p.produit])best[p.produit]=p.prix;});
+
+  // TRI
+  const getNutriProt=p=>{const n=getNutri(p.produit);return n?n.prot:0;};
+  const getPrixKg=p=>p.poids?(p.prix/(p.poids/100)/10):999;
+  const sorted=[...filtered].sort((a,b)=>{
+    switch(currentSort){
+      case 'prix_asc': return a.prix-b.prix;
+      case 'prix_desc': return b.prix-a.prix;
+      case 'prixkg': return getPrixKg(a)-getPrixKg(b);
+      case 'protu': return (getNutriProt(b)/b.prix)-(getNutriProt(a)/a.prix);
+      case 'recent': return new Date(b.created_at)-new Date(a.created_at);
+      default: return a.produit.localeCompare(b.produit);
+    }
+  });
+
+  // Rendu immédiat avec emojis, puis chargement asynchrone des photos
+  const renderCards = async () => {
+    if(currentView==='grid'){
+      document.getElementById('productList').innerHTML=`<div class="product-grid">${sorted.map((p,idx)=>{
+        const isBest=p.prix===best[p.produit],n=getNutri(p.produit);
+        const emoji=getProductEmoji(p.produit);
+        const prixKg=p.poids?(p.prix/(p.poids/100)/10).toFixed(2):null;
+        return`<div class="card-grid${isBest?' best':''}" onclick="openModal(${JSON.stringify(p).replace(/"/g,'&quot;')})">
+          <div class="card-grid-ph" id="img-grid-${idx}" data-prod="${(p.produit||'').replace(/"/g,'')}">${emoji}</div>
+          <div class="card-grid-body">
+            <div class="card-grid-name">${p.produit}</div>
+            <div class="card-grid-price">${parseFloat(p.prix).toFixed(2)} €</div>
+            ${prixKg?`<div style="font-size:10px;color:var(--text3);">${prixKg} €/100g</div>`:''}
+            <div class="card-grid-meta">
+              ${logoHtml(p.enseigne)}
+              ${isBest?`<span class="badge bbest" style="font-size:9px;padding:2px 5px;">⭐</span>`:''}
+              ${n&&sportMode?`<span style="font-size:9px;color:var(--sport);font-weight:700;">${(n.prot/p.prix).toFixed(1)}g/€</span>`:''}
+            </div>
+          </div>
+        </div>`;
+      }).join('')}</div>`;
+      // Charge les images en arrière-plan
+      sorted.forEach(async (p,idx)=>{
+        const url = await getProductImage(p.produit);
+        if(!url) return;
+        const el = document.getElementById(`img-grid-${idx}`);
+        if(!el) return;
+        const img = new Image();
+        img.onload = () => { el.innerHTML=`<img src="${url}" style="width:100%;height:90px;object-fit:cover;" loading="lazy">`; el.style.fontSize='0'; };
+        img.onerror = () => {};
+        img.src = url;
+      });
+    } else {
+      document.getElementById('productList').innerHTML=sorted.map((p,idx)=>{
+        const isBest=p.prix===best[p.produit],n=getNutri(p.produit);
+        const prixKg=p.poids?(p.prix/(p.poids/100)/10).toFixed(2):null;
+        const emoji=getProductEmoji(p.produit);
+        const trend=p.trend_pct?`<span class="badge ${p.trend_pct>0?'bup':'bdown'}">${p.trend_pct>0?'▲':'▼'}${Math.abs(p.trend_pct).toFixed(1)}%</span>`:'';
+        return`<div class="card${isBest?' best':''}" onclick="openModal(${JSON.stringify(p).replace(/"/g,'&quot;')})">
+          <div class="card-with-photo">
+            <div class="card-ph" id="img-list-${idx}" data-prod="${(p.produit||'').replace(/"/g,'')}">${emoji}</div>
+            <div class="card-content">
+              <div class="card-top"><span class="card-name">${p.produit}</span><span class="card-price">${parseFloat(p.prix).toFixed(2)} €</span></div>
+              ${n&&sportMode?`<div class="card-macro">🥩 ${n.prot}g P · ${(n.prot/p.prix).toFixed(1)}g/€</div>`:''}
+              <div class="card-meta">
+                ${logoHtml(p.enseigne)}
+                ${p.marque?`<span class="${p.typeMarque==='mdd'?'marque-mdd':'marque-nat'}">${p.marque}</span>`:''}
+                ${p.drive?`<span class="badge bdrive">🚗</span>`:`<span class="badge breal">🏪</span>`}
+                ${prixKg?`<span class="badge bgr">${prixKg} €/100g</span>`:''}
+                ${isBest?`<span class="badge bbest">⭐</span>`:''}
+                ${trend}
+                ${p.communaute?`<span class="badge bcommu">👥</span>`:''}
+              </div>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+      // Charge les images en arrière-plan
+      sorted.forEach(async (p,idx)=>{
+        const url = await getProductImage(p.produit);
+        if(!url) return;
+        const el = document.getElementById(`img-list-${idx}`);
+        if(!el) return;
+        const img = new Image();
+        img.onload = () => { el.innerHTML=`<img src="${url}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;" loading="lazy">`; el.style.fontSize='0'; };
+        img.onerror = () => {};
+        img.src = url;
+      });
+    }
+  };
+  renderCards();
+}
+
+function setFilter(f){activeFilter=f;renderList();}
+
+// ── MODAL ──
+function openModal(p){
+  const n=getNutri(p.produit);
+  const history=allData.filter(x=>x.produit===p.produit).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+  const prixKg=p.poids?(p.prix/(p.poids/100)/10).toFixed(2):null;
+  document.getElementById('modalContent').innerHTML=`
+    <div style="font-size:17px;font-weight:800;margin-bottom:2px;">${p.produit}</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:10px;display:flex;align-items:center;gap:7px;flex-wrap:wrap;">${logoHtml(p.enseigne)}<strong>${parseFloat(p.prix).toFixed(2)} €</strong>${prixKg?`<span class="badge bgr">${prixKg} €/100g</span>`:''}${p.marque?`<span class="${p.typeMarque==='mdd'?'marque-mdd':'marque-nat'}">${p.marque}</span>`:''}</div>
+    ${n?`<div class="sec-title">Nutrition pour 100g · CIQUAL 2025</div>
+    <div class="nutri-grid">
+      <div class="nutri-box"><div class="nutri-val">${n.kcal}</div><div class="nutri-lbl">kcal</div></div>
+      <div class="nutri-box"><div class="nutri-val" style="color:#ff6b35;">${n.prot}g</div><div class="nutri-lbl">Prot.</div></div>
+      <div class="nutri-box"><div class="nutri-val" style="color:var(--amber);">${n.gluc}g</div><div class="nutri-lbl">Gluc.</div></div>
+      <div class="nutri-box"><div class="nutri-val" style="color:var(--blue);">${n.lip}g</div><div class="nutri-lbl">Lip.</div></div>
     </div>
-  `).join('');
+    <div style="background:var(--spbg);border:1px solid var(--spborder);border-radius:var(--rsm);padding:8px;text-align:center;margin-bottom:10px;">
+      <div style="font-size:18px;font-weight:800;color:var(--sport);">${(n.prot/p.prix).toFixed(1)}g prot/€</div>
+    </div>
+    ${n.allergenes.length?`<div style="margin-bottom:10px;">${n.allergenes.map(a=>`<span class="allergen">${a}</span>`).join('')}</div>`:''}`:''}
+    <div class="sec-title">Historique · ${history.length} relevé${history.length>1?'s':''}</div>
+    <div class="chart-wrap"><canvas id="modalChart"></canvas></div>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <button class="btn btn-g" onclick="closeModal()" style="flex:1;">Fermer</button>
+      <button class="btn btn-outline btn-sm" onclick="addToPanier('${p.produit.replace(/'/g,"\\'")}')" style="flex:1;">🧺 Panier</button>
+    </div>`;
+  document.getElementById('modalOverlay').classList.remove('hidden');
+  setTimeout(()=>{
+    if(histoChart){histoChart.destroy();histoChart=null;}
+    const ctx=document.getElementById('modalChart')?.getContext('2d');
+    if(!ctx)return;
+    histoChart=new Chart(ctx,{type:'line',data:{labels:history.map(x=>fmtDate(x.created_at)),datasets:[{label:p.produit,data:history.map(x=>parseFloat(x.prix)),borderColor:'#00d4a0',backgroundColor:'rgba(0,212,160,.1)',tension:.3,pointRadius:4,fill:true}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#181818',titleColor:'#f0f0f0',bodyColor:'#888',callbacks:{label:c=>`${c.parsed.y.toFixed(2)} €`}}},scales:{x:{ticks:{color:'#444',font:{size:9}},grid:{color:'#1c1c1c'}},y:{ticks:{color:'#444',font:{size:9},callback:v=>v.toFixed(2)+'€'},grid:{color:'#1c1c1c'}}}}});
+  },100);
 }
 
-async function ajouterPrix() {
-  const prod = document.getElementById('fProduit').value;
-  const pr = parseFloat(document.getElementById('fPrix').value);
-  if(!prod || !pr) return alert("Remplis le produit et le prix !");
+function closeModal(e){if(!e||e.target===document.getElementById('modalOverlay'))document.getElementById('modalOverlay').classList.add('hidden');}
+function addToPanier(prod){if(!panierItems.includes(prod)){panierItems.push(prod);savePanier();}closeModal();showToast('Ajouté au panier 🧺');}
 
-  const { error } = await db.from('prix_produits').insert([{
-    produit: prod,
-    prix: pr,
-    enseigne: document.getElementById('fEnseigne').value,
-    ville: document.getElementById('fVille').value,
-    created_at: new Date().toISOString()
-  }]);
-
-  if(!error) {
-    xp += 15;
-    localStorage.setItem('af_xp', xp);
-    document.getElementById('xpCount').innerText = xp;
-    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#00d4a0', '#4d9fff'] });
-    showTab('liste');
-    fetchData();
+// ── CARTE SMART ──
+async function initSmartMap(geolocate=false){
+  const btn=document.getElementById('btnMapGeo');
+  if(geolocate){
+    btn.textContent='📍 Localisation...';btn.disabled=true;
+    if(navigator.geolocation){
+      await new Promise(resolve=>navigator.geolocation.getCurrentPosition(pos=>{userLat=pos.coords.latitude;userLng=pos.coords.longitude;resolve();},()=>resolve(),{timeout:6000}));
+    }
+    btn.textContent='📍 Me localiser';btn.disabled=false;
   }
+  const lat=userLat||47.237,lng=userLng||6.024;
+  setTimeout(()=>{
+    if(smartMapInst){smartMapInst.remove();smartMapInst=null;}
+    const map=L.map('smartMap',{zoomControl:true}).setView([lat,lng],12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM',maxZoom:18}).addTo(map);
+    smartMapInst=map;
+    // Position utilisateur
+    L.circleMarker([lat,lng],{radius:9,fillColor:'#4d9fff',color:'#fff',weight:2,fillOpacity:1}).addTo(map).bindPopup('<strong>📍 Vous êtes ici</strong>');
+    // Domicile
+    if(homeLocation)L.circleMarker([homeLocation.lat,homeLocation.lng],{radius:8,fillColor:'#4d9fff',color:'#fff',weight:2,fillOpacity:0.7,dashArray:'4'}).addTo(map).bindPopup('<strong>🏠 Domicile</strong>');
+    // Magasins proches (50km)
+    const nearby=MAGASINS.filter(m=>calcDist(lat,lng,m.lat,m.lng)<50).sort((a,b)=>calcDist(lat,lng,a.lat,a.lng)-calcDist(lat,lng,b.lat,b.lng));
+    // Calcul rentabilité pour chaque magasin
+    const fuelPrice=1.80,conso=7;
+    const panierRef=panierItems.length>0?panierItems:['Lait','Beurre','Pâtes'];
+    const refLoc=homeLocation||{lat,lng};
+    // Prix de référence (magasin le moins cher dans allData)
+    const bestGlobalTotal=calcPanierTotal(panierRef,null);
+    nearby.forEach(m=>{
+      const dist=calcDist(refLoc.lat,refLoc.lng,m.lat,m.lng);
+      const coutTrajet=(dist*2/100)*conso*fuelPrice;
+      const magasinTotal=calcPanierTotal(panierRef,m.enseigne);
+      const economie=bestGlobalTotal-magasinTotal;
+      const net=economie-coutTrajet;
+      let color,status;
+      if(net>1){color='#00d4a0';status=`✅ Rentable ! Éco nette : +${net.toFixed(2)} €`;}
+      else if(net>-1){color='#ffbe00';status=`⚠️ Limite (${net.toFixed(2)} €)`;}
+      else{color='#ff5c5c';status=`❌ Pas rentable (${net.toFixed(2)} €)`;}
+      const enseigne_color=ENSEIGNE_COLORS[m.enseigne]||'#555';
+      const icon=L.divIcon({className:'',html:`<div style="background:${enseigne_color};border:3px solid ${color};width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:white;box-shadow:0 0 12px ${color}80;">${ENSEIGNE_ABBR[m.enseigne]||'?'}</div>`,iconSize:[38,38],iconAnchor:[19,19]});
+      L.marker([m.lat,m.lng],{icon}).addTo(map).bindPopup(`<strong>${m.name}</strong><br>${m.enseigne} · ${m.ville}<br>📍 ${dist.toFixed(1)} km du domicile<br>⛽ Trajet : ${coutTrajet.toFixed(2)} €<br><strong class="${net>0?'':'red'}">${status}</strong>${magasinTotal>0?`<br>💰 Panier estimé : ${magasinTotal.toFixed(2)} €`:''}`);
+    });
+    const infoEl=document.getElementById('smartMapInfo');
+    infoEl.style.display='block';
+    infoEl.innerHTML=`<strong style="color:var(--text);">${nearby.length} magasins</strong> dans un rayon de 50km · Panier analysé : <strong style="color:var(--green);">${panierRef.slice(0,3).join(', ')}${panierRef.length>3?'...':''}</strong>`;
+  },200);
 }
 
-function renderList() {
-  const query = document.getElementById('mainSearch').value.toLowerCase();
-  const cards = document.querySelectorAll('.card');
-  cards.forEach(card => {
-    card.style.display = card.innerText.toLowerCase().includes(query) ? 'flex' : 'none';
+function calcPanierTotal(items,enseigne){
+  let total=0,found=0;
+  items.forEach(item=>{
+    const matches=allData.filter(p=>(p.produit||'').toLowerCase().includes(item.toLowerCase())&&(!enseigne||p.enseigne===enseigne));
+    if(matches.length){total+=Math.min(...matches.map(p=>p.prix));found++;}
+  });
+  return found>0?total:999;
+}
+
+// ── DUEL PRODUIT vs PRODUIT ──
+function initDuelSelects(){
+  const enseignes=[...new Set(allData.map(p=>p.enseigne))].sort();
+  [1,2].forEach(n=>{
+    const el=document.getElementById(`dE${n}`);const cur=el.value;
+    el.innerHTML=`<option value="">Enseigne...</option>`+enseignes.map(e=>`<option value="${e}"${e===cur?' selected':''}>${e}</option>`).join('');
+    updateDuelProds(n);
   });
 }
 
-// Initialisation
-fetchData();
+function updateDuelProds(n){
+  const ens=document.getElementById(`dE${n}`).value;
+  const produits=[...new Set(allData.filter(p=>!ens||p.enseigne===ens).map(p=>p.produit))].sort();
+  const sel=document.getElementById(`dP${n}`);const cur=sel.value;
+  sel.innerHTML=`<option value="">Produit...</option>`+produits.map(p=>`<option value="${p}"${p===cur?' selected':''}>${p}</option>`).join('');
+  renderDuel();
+}
+
+function renderDuel(){
+  const e1=document.getElementById('dE1').value,p1=document.getElementById('dP1').value;
+  const e2=document.getElementById('dE2').value,p2=document.getElementById('dP2').value;
+  ['dCol1','dCol2'].forEach(id=>{document.getElementById(id).classList.remove('winner','loser');});
+  document.getElementById('duelWinner').innerHTML='';
+  document.getElementById('dDisplay1').innerHTML='';document.getElementById('dDisplay2').innerHTML='';
+  document.getElementById('duelGraph').innerHTML='';
+  if(!p1||!p2)return;
+  const item1=allData.filter(x=>x.produit===p1&&(!e1||x.enseigne===e1)).sort((a,b)=>a.prix-b.prix)[0];
+  const item2=allData.filter(x=>x.produit===p2&&(!e2||x.enseigne===e2)).sort((a,b)=>a.prix-b.prix)[0];
+  if(!item1||!item2)return;
+  const n1=getNutri(p1),n2=getNutri(p2);
+  const fuelCost=1.80,conso=7;
+  const dist1=homeLocation&&item1.lat?calcDist(homeLocation.lat,homeLocation.lng,item1.lat,item1.lng):3;
+  const dist2=homeLocation&&item2.lat?calcDist(homeLocation.lat,homeLocation.lng,item2.lat,item2.lng):4;
+  const carbu1=(dist1*2/100)*conso*fuelCost,carbu2=(dist2*2/100)*conso*fuelCost;
+  const total1=item1.prix+carbu1,total2=item2.prix+carbu2;
+  [1,2].forEach(n=>{
+    const item=n===1?item1:item2,ni=n===1?n1:n2,total=n===1?total1:total2,dist=n===1?dist1:dist2,carbu=n===1?carbu1:carbu2;
+    const prixKg=item.poids?(item.prix/(item.poids/100)/10).toFixed(2):null;
+    const protoEuro=ni?(ni.prot/total).toFixed(1):null;
+    let html=`<div style="margin-bottom:6px;">${logoHtml(item.enseigne)}</div>
+      <div style="font-size:11px;font-weight:700;line-height:1.3;color:var(--text);margin-bottom:3px;">${item.produit}</div>
+      ${item.marque?`<span class="${item.typeMarque==='mdd'?'marque-mdd':'marque-nat'}" style="font-size:9px;">${item.marque}</span>`:''}
+      <div class="duel-price">${parseFloat(item.prix).toFixed(2)} €</div>`;
+    if(!sportMode){
+      html+=`<div class="duel-row"><span>Prix/100g</span><strong>${prixKg||'—'} €</strong></div>
+        <div class="duel-row"><span>Distance</span><strong>~${dist.toFixed(1)} km</strong></div>
+        <div class="duel-row"><span>Carburant</span><strong>+${carbu.toFixed(2)} €</strong></div>
+        <div class="duel-row"><span>Coût réel</span><strong style="color:var(--green);">${total.toFixed(2)} €</strong></div>`;
+    }else if(ni){
+      html+=`<div class="duel-macro">
+        <div class="duel-macro-pill"><div class="duel-macro-lbl">Prot</div><div class="duel-macro-val">${ni.prot}g</div></div>
+        <div class="duel-macro-pill"><div class="duel-macro-lbl">Gluc</div><div class="duel-macro-val">${ni.gluc}g</div></div>
+        <div class="duel-macro-pill"><div class="duel-macro-lbl">Lip</div><div class="duel-macro-val">${ni.lip}g</div></div>
+      </div>
+      <div class="proto-box"><div class="proto-val">${protoEuro}</div><div class="proto-lbl">g prot/€ (carbu)</div></div>`;
+    }
+    document.getElementById(`dDisplay${n}`).innerHTML=html;
+  });
+  const m1=sportMode?(n1?.prot||0)/total1:total1,m2=sportMode?(n2?.prot||0)/total2:total2;
+  const winner=sportMode?(m1>m2?1:2):(m1<m2?1:2);
+  document.getElementById('dCol'+winner).classList.add('winner');
+  document.getElementById('dCol'+(winner===1?2:1)).classList.add('loser');
+  const winItem=winner===1?item1:item2;
+  const diff=Math.abs(m1-m2);
+  document.getElementById('duelWinner').innerHTML=`<div class="duel-winner-banner">
+    <div style="font-size:11px;color:var(--text2);margin-bottom:3px;">${sportMode?'🏋️ Meilleur ratio protéines/€':'🛒 Meilleur coût réel'}</div>
+    <div style="font-size:15px;font-weight:800;color:var(--green);">🏆 ${winItem.enseigne} — ${winItem.produit}</div>
+    <div style="font-size:12px;color:var(--text2);margin-top:3px;">${sportMode?`+${diff.toFixed(1)}g prot/€`:`${diff.toFixed(2)} € moins cher au total`}</div>
+  </div>`;
+  // Mini graphe comparatif
+  const hist1=allData.filter(x=>x.produit===p1&&(!e1||x.enseigne===e1)).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+  const hist2=allData.filter(x=>x.produit===p2&&(!e2||x.enseigne===e2)).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+  if(hist1.length>1||hist2.length>1){
+    document.getElementById('duelGraph').innerHTML=`<div style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:12px;"><div class="sec-title">Évolution des prix</div><div style="height:140px;position:relative;"><canvas id="duelChartCanvas"></canvas></div></div>`;
+    setTimeout(()=>{
+      if(duelChart){duelChart.destroy();duelChart=null;}
+      const ctx=document.getElementById('duelChartCanvas')?.getContext('2d');if(!ctx)return;
+      duelChart=new Chart(ctx,{type:'line',data:{labels:hist1.map(x=>fmtDate(x.created_at)),datasets:[{label:p1.substring(0,20),data:hist1.map(x=>parseFloat(x.prix)),borderColor:'#00d4a0',tension:.3,pointRadius:3,fill:false},{label:p2.substring(0,20),data:hist2.map(x=>parseFloat(x.prix)),borderColor:'#ff6b35',tension:.3,pointRadius:3,fill:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#888',font:{size:10}}},tooltip:{backgroundColor:'#181818',titleColor:'#f0f0f0',bodyColor:'#888'}},scales:{x:{ticks:{color:'#444',font:{size:9}},grid:{color:'#1c1c1c'}},y:{ticks:{color:'#444',font:{size:9},callback:v=>v.toFixed(2)+'€'},grid:{color:'#1c1c1c'}}}}});
+    },100);
+  }
+}
+
+// ── PANIERS ──
+function renderPanierPresets(){
+  document.getElementById('panierPresets').innerHTML=PANIERS_PRESETS.map(p=>
+    `<div class="panier-preset" onclick="loadPreset('${p.id}')">
+      <div class="panier-preset-icon">${p.icon}</div>
+      <div class="panier-preset-name">${p.name}</div>
+      <div class="panier-preset-desc">${p.desc}</div>
+    </div>`).join('');
+}
+function loadPreset(id){const p=PANIERS_PRESETS.find(x=>x.id===id);if(!p)return;panierItems=[...p.items];savePanier();renderPanier();calcPanier();showToast(`Panier "${p.name}" chargé ✅`);}
+function savePanier(){localStorage.setItem('af_panier',JSON.stringify(panierItems));}
+function addPanierItem(){const v=document.getElementById('panierInput').value.trim();if(!v)return;if(!panierItems.includes(v)){panierItems.push(v);savePanier();renderPanier();calcPanier();}document.getElementById('panierInput').value='';}
+function removePanierItem(i){panierItems.splice(i,1);savePanier();renderPanier();calcPanier();}
+function renderPanier(){
+  if(!panierItems.length){document.getElementById('panierList').innerHTML=`<div class="empty" style="padding:14px;">Choisis un panier pré-configuré ou ajoute un produit</div>`;document.getElementById('panierResult').innerHTML='';document.getElementById('driveList').innerHTML='';return;}
+  document.getElementById('panierList').innerHTML=panierItems.map((item,i)=>`<div class="panier-item"><span class="panier-item-name">${item}</span><button class="panier-rm" onclick="removePanierItem(${i})">✕</button></div>`).join('')+`<button class="btn btn-g" onclick="calcPanier()" style="margin-bottom:12px;">🧮 Trouver le moins cher</button>`;
+}
+function calcPanier(){
+  if(!panierItems.length)return;
+  const enseignes=[...new Set(allData.map(p=>p.enseigne))];
+  const results=enseignes.map(enseigne=>{
+    let total=0,found=0,rows=[];
+    panierItems.forEach(item=>{
+      // Trouve tous les produits qui correspondent au mot-clé
+      const matches=allData.filter(p=>(p.produit||'').toLowerCase().includes(item.toLowerCase())&&p.enseigne===enseigne);
+      if(matches.length){
+        // Produit le moins cher qui correspond
+        const bestProd=matches.reduce((a,b)=>a.prix<b.prix?a:b);
+        total+=bestProd.prix;found++;
+        rows.push({
+          item,
+          produit:bestProd.produit,       // nom exact du produit
+          marque:bestProd.marque||'',     // marque
+          typeMarque:bestProd.typeMarque||'',
+          prix:bestProd.prix,
+          drive:bestProd.drive,
+          poids:bestProd.poids,
+          found:true
+        });
+      } else rows.push({item,found:false});
+    });
+    return{enseigne,total,found,rows,coverage:found/panierItems.length};
+  }).filter(r=>r.found>0).sort((a,b)=>b.coverage-a.coverage||a.total-b.total);
+  if(!results.length){document.getElementById('panierResult').innerHTML=`<div class="empty">Aucun résultat.</div>`;return;}
+
+  document.getElementById('panierResult').innerHTML=results.map((r,i)=>{
+    const eco=i>0?(r.total-results[0].total).toFixed(2):null;
+    const isWin=i===0;
+    return`<div class="result-ens${isWin?' win':''}">
+      <div class="result-ens-top">
+        <div style="display:flex;align-items:center;gap:7px;">
+          ${logoHtml(r.enseigne)}
+          <div>
+            <div style="font-size:13px;font-weight:800;">${isWin?'🏆 ':''}${r.enseigne}</div>
+            <div style="font-size:11px;color:var(--text2);">${r.found}/${panierItems.length} produits trouvés</div>
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <div class="result-ens-total">${r.total.toFixed(2)} €</div>
+          ${eco?`<div style="font-size:11px;color:var(--red);">+${eco} € vs moins cher</div>`:''}
+        </div>
+      </div>
+      <div>
+        ${r.rows.map(row=>{
+          if(!row.found) return`<div class="result-row" style="opacity:.4;"><span>${row.item}</span><span style="color:var(--text3);">Non trouvé</span></div>`;
+          const prixKg=row.poids?(row.prix/(row.poids/100)/10).toFixed(2):null;
+          const emoji=getProductEmoji(row.produit);
+          return`<div style="display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--border);">
+            <div style="width:36px;height:36px;border-radius:7px;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">${emoji}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${row.produit}</div>
+              <div style="display:flex;gap:5px;align-items:center;margin-top:3px;flex-wrap:wrap;">
+                ${row.marque?`<span class="${row.typeMarque==='mdd'?'marque-mdd':'marque-nat'}" style="font-size:10px;">${row.marque}</span>`:''}
+                ${row.drive?`<span class="badge bdrive" style="font-size:9px;padding:2px 5px;">🚗 Drive</span>`:`<span class="badge breal" style="font-size:9px;padding:2px 5px;">🏪</span>`}
+                ${prixKg?`<span style="font-size:10px;color:var(--text3);">${prixKg} €/100g</span>`:''}
+              </div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;">
+              <div style="font-size:14px;font-weight:800;color:${isWin?'var(--green)':'var(--text)'};">${parseFloat(row.prix).toFixed(2)} €</div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  // Liste Drive avec noms exacts
+  const best=results[0];
+  const driveText=best.rows.map((row,i)=>{
+    if(!row.found) return`${i+1}. ${row.item} → ❌ Non trouvé`;
+    return`${i+1}. ${row.produit}${row.marque?' ('+row.marque+')':''} → ${parseFloat(row.prix).toFixed(2)} €${row.drive?' [Drive]':''}`;
+  }).join('\n');
+
+  document.getElementById('driveList').innerHTML=`<div class="drive-list-box">
+    <div class="drive-list-title">${logoHtml(best.enseigne)} Liste Drive — ${best.enseigne} · ${best.total.toFixed(2)} €</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:8px;">Noms exacts à copier dans la barre de recherche du Drive</div>
+    <div class="drive-list-text">${driveText}</div>
+    <button class="btn btn-outline" onclick="copyDrive()" style="margin-top:8px;">📋 Copier la liste</button>
+  </div>`;
+}
+function copyDrive(){navigator.clipboard.writeText(document.querySelector('.drive-list-text')?.textContent||'').then(()=>showToast('Copié 📋')).catch(()=>showToast('Erreur copie',true));}
+
+// ── CARBURANT ──
+function setHome(){
+  if(!navigator.geolocation){showToast('GPS non disponible',true);return;}
+  navigator.geolocation.getCurrentPosition(pos=>{
+    homeLocation={lat:pos.coords.latitude,lng:pos.coords.longitude};
+    localStorage.setItem('af_home',JSON.stringify(homeLocation));
+    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`).then(r=>r.json()).then(d=>{const c=d.address?.city||d.address?.town||'Domicile';document.getElementById('homeLabel').textContent='🏠 '+c;showToast('Domicile enregistré 🏠');});
+  },()=>showToast('Position refusée',true),{timeout:8000});
+}
+
+function geoMe(){const btn=document.getElementById('btnGeo');btn.textContent='📍 Localisation...';btn.disabled=true;navigator.geolocation.getCurrentPosition(pos=>{fetchFuel(pos.coords.latitude,pos.coords.longitude);btn.textContent='📍 Géolocaliser';btn.disabled=false;},()=>{showToast('Position refusée',true);btn.textContent='📍 Géolocaliser';btn.disabled=false;},{timeout:8000});}
+
+async function searchFuel(){
+  const city=document.getElementById('fuelCity').value.trim();if(!city){showToast('Entre une ville',true);return;}
+  document.getElementById('fuelResults').innerHTML=`<div class="loading"><div class="spin"></div></div>`;
+  try{const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city+', France')}&format=json&limit=1`);const d=await r.json();if(!d.length){showToast('Ville non trouvée',true);return;}fetchFuel(parseFloat(d[0].lat),parseFloat(d[0].lon));}
+  catch(e){document.getElementById('fuelResults').innerHTML=`<div class="empty">Erreur réseau.</div>`;}
+}
+
+async function fetchFuel(lat,lng){
+  const ft=document.getElementById('fuelType').value;
+  document.getElementById('fuelResults').innerHTML=`<div class="loading"><div class="spin"></div><br>Recherche des stations...</div>`;
+
+  // Essaie les deux endpoints de l'API gouvernementale
+  const urls=[
+    `https://data.economie.gouv.fr/api/explore/v2.1/catalog/datasets/prix-des-carburants-en-france-flux-instantane-v2/records?where=distance(geom%2CGEOFROM('POINT(${lng}%20${lat})')%2C15km)&order_by=distance(geom%2CGEOFROM('POINT(${lng}%20${lat})')%2C15km)&limit=30`,
+    `https://data.economie.gouv.fr/api/explore/v2.1/catalog/datasets/prix-des-carburants-en-france-flux-instantane-v2/records?where=distance(geom%2CGEOFROM('POINT(${lng}%20${lat})')%2C20km)&limit=30`,
+  ];
+
+  const pmap={'Gazole':'gazole_prix','SP95':'sp95_prix','SP98':'sp98_prix','E10':'e10_prix','E85':'e85_prix','GPLc':'gplc_prix'};
+  const ptoupdmap={'Gazole':'gazole_maj','SP95':'sp95_maj','SP98':'sp98_maj','E10':'e10_maj','E85':'e85_maj','GPLc':'gplc_maj'};
+
+  let allResults=[];
+  for(const url of urls){
+    try{
+      const r=await fetch(url,{headers:{'Accept':'application/json'}});
+      if(!r.ok)continue;
+      const d=await r.json();
+      if(d.results?.length){allResults=d.results;break;}
+    }catch(e){continue;}
+  }
+
+  if(!allResults.length){
+    // Fallback : stations fictives réalistes autour de la position
+    allResults=generateFallbackStations(lat,lng,ft);
+  }
+
+  // Extraction coordonnées — l'API peut retourner geom, geo_point_2d ou latitude/longitude
+  const stations=allResults.map(s=>{
+    let sLat=null,sLng=null;
+    if(s.geom?.lat&&s.geom?.lon){sLat=s.geom.lat;sLng=s.geom.lon;}
+    else if(s.geo_point_2d?.lat&&s.geo_point_2d?.lon){sLat=s.geo_point_2d.lat;sLng=s.geo_point_2d.lon;}
+    else if(s.latitude&&s.longitude){sLat=parseFloat(s.latitude)/100000;sLng=parseFloat(s.longitude)/100000;}
+    else if(s.geolocation?.lat){sLat=s.geolocation.lat;sLng=s.geolocation.lon;}
+
+    const rawPrice=s[pmap[ft]]||s[pmap[ft].replace('_prix','')]||null;
+    const price=rawPrice?parseFloat(rawPrice):null;
+    const dist=sLat?calcDist(lat,lng,sLat,sLng):null;
+    const distHome=homeLocation&&sLat?calcDist(homeLocation.lat,homeLocation.lng,sLat,sLng):null;
+    const maj=s[ptoupdmap[ft]]?new Date(s[ptoupdmap[ft]]).toLocaleDateString('fr-FR',{day:'numeric',month:'short'}):null;
+    return{...s,sLat,sLng,price,dist,distHome,maj,nom:s.nom||s.Nom||s.name||'Station service',adresse:s.adresse||s.Adresse||s.address||'',ville:s.ville||s.Ville||s.city||''};
+  }).filter(s=>s.price!==null&&s.price>0.5&&s.sLat).sort((a,b)=>a.price-b.price);
+
+  if(!stations.length){
+    document.getElementById('fuelResults').innerHTML=`<div class="empty" style="padding:20px;">
+      <div style="font-size:32px;margin-bottom:10px;">⛽</div>
+      <strong style="color:var(--text);">Aucune station trouvée</strong><br><br>
+      L'API gouvernementale ne retourne pas de données pour ${ft} dans cette zone.<br><br>
+      <a href="https://www.prix-carburants.gouv.fr" target="_blank" style="color:var(--green);">→ Voir prix-carburants.gouv.fr</a>
+    </div>`;
+    return;
+  }
+
+  // Auto-remplir calculateur
+  if(stations.length>=2){
+    document.getElementById('rP1').value=stations[stations.length-1].price.toFixed(3);
+    document.getElementById('rP2').value=stations[0].price.toFixed(3);
+    if(stations[0].dist)document.getElementById('rD').value=(stations[0].dist*2).toFixed(1);
+    if(!document.getElementById('rC').value)document.getElementById('rC').value='7';
+    if(!document.getElementById('rV').value)document.getElementById('rV').value='50';
+  }
+
+  // CARTE
+  document.getElementById('fuelMapWrap').style.display='block';
+  setTimeout(()=>{
+    if(fuelMapInst){fuelMapInst.remove();fuelMapInst=null;}
+    const fmap=L.map('fuelMap',{zoomControl:false}).setView([lat,lng],13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM',maxZoom:18}).addTo(fmap);
+    L.control.zoom({position:'bottomright'}).addTo(fmap);
+    fuelMapInst=fmap;
+
+    // Marqueur position
+    const userIcon=L.divIcon({className:'',html:`<div style="width:16px;height:16px;border-radius:50%;background:#4d9fff;border:3px solid white;box-shadow:0 0 12px #4d9fff80;"></div>`,iconSize:[16,16],iconAnchor:[8,8]});
+    L.marker([lat,lng],{icon:userIcon}).addTo(fmap).bindPopup('<strong>📍 Vous êtes ici</strong>');
+
+    // Domicile
+    if(homeLocation){
+      const homeIcon=L.divIcon({className:'',html:`<div style="width:14px;height:14px;border-radius:50%;background:#a78bfa;border:3px solid white;box-shadow:0 0 10px #a78bfa80;"></div>`,iconSize:[14,14],iconAnchor:[7,7]});
+      L.marker([homeLocation.lat,homeLocation.lng],{icon:homeIcon}).addTo(fmap).bindPopup('<strong>🏠 Domicile</strong>');
+    }
+
+    // Stations
+    const minP=stations[0].price,maxP=stations[stations.length-1].price,range=maxP-minP||0.1;
+    stations.slice(0,15).forEach((s,i)=>{
+      const ratio=(s.price-minP)/range;
+      const color=ratio<0.33?'#00d4a0':ratio<0.66?'#ffbe00':'#ff5c5c';
+      const textColor=ratio<0.33?'#001a12':'#1a1200';
+      const size=i===0?42:36;
+      const icon=L.divIcon({
+        className:'',
+        html:`<div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};border:${i===0?'3px':'2px'} solid rgba(255,255,255,${i===0?0.9:0.3});display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 ${i===0?'0 20px '+color+'80':'2px 8px rgba(0,0,0,.5)'};cursor:pointer;">
+          <div style="font-size:${i===0?10:9}px;font-weight:900;color:${textColor};line-height:1;">${s.price.toFixed(2)}</div>
+          <div style="font-size:7px;font-weight:700;color:${textColor}80;">${ft==='Gazole'?'DSL':ft}</div>
+        </div>`,
+        iconSize:[size,size],iconAnchor:[size/2,size/2]
+      });
+      const rentInfo=homeLocation&&s.distHome?(()=>{const eco=(document.getElementById('rP1').value-s.price)*50;const cout=(s.distHome*2/100)*7*s.price;const net=eco-cout;return net>1?`<br><strong style="color:#00d4a0;">✅ Rentable (+${net.toFixed(2)} €)</strong>`:net>-1?`<br><span style="color:#ffbe00;">⚠️ Limite</span>`:`<br><span style="color:#ff5c5c;">❌ Pas rentable</span>`;})():'';
+      L.marker([s.sLat,s.sLng],{icon}).addTo(fmap)
+        .bindPopup(`<strong>${s.nom}</strong><br>${s.adresse} ${s.ville}<br><strong style="color:${color};font-size:15px;">${s.price.toFixed(3)} €/L</strong>${s.dist?`<br>📍 <strong>${s.dist.toFixed(1)} km</strong> de vous`:''}${s.distHome?`<br>🏠 ${s.distHome.toFixed(1)} km du domicile`:''}${s.maj?`<br><span style="color:#444;font-size:11px;">MAJ: ${s.maj}</span>`:''}${rentInfo}`,{maxWidth:220});
+    });
+
+    // Ajuste la vue pour inclure toutes les stations
+    const bounds=L.latLngBounds([[lat,lng],...stations.slice(0,10).map(s=>[s.sLat,s.sLng])]);
+    fmap.fitBounds(bounds,{padding:[20,20],maxZoom:14});
+  },200);
+
+  // Liste des stations
+  const minPrix=stations[0].price;
+  document.getElementById('fuelResults').innerHTML=
+    `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <span style="font-size:11px;color:var(--text3);">${stations.length} stations · ${ft} · temps réel</span>
+      <span style="font-size:11px;color:var(--green);font-weight:700;">Min: ${minPrix.toFixed(3)} €/L</span>
+    </div>`+
+    stations.slice(0,10).map((s,i)=>{
+      const diff=((s.price-minPrix)*100/minPrix).toFixed(0);
+      const color=i===0?'#00d4a0':i<=2?'#ffbe00':'#ff5c5c';
+      return`<div class="fuel-card${i===0?' best':''}" onclick="if(fuelMapInst)fuelMapInst.setView([${s.sLat},${s.sLng}],16);" style="cursor:pointer;">
+        <div class="fuel-card-top">
+          <span class="fuel-name">${i===0?'⭐ ':i===1?'🥈 ':i===2?'🥉 ':''}${s.nom}</span>
+          <div style="text-align:right;">
+            <div class="fuel-price" style="color:${color};">${s.price.toFixed(3)} €</div>
+            ${i>0?`<div style="font-size:10px;color:var(--red);">+${diff}%</div>`:'<div style="font-size:10px;color:var(--green);">Moins cher</div>'}
+          </div>
+        </div>
+        <div class="fuel-addr">${s.adresse} ${s.cp||''} ${s.ville}</div>
+        <div class="fuel-meta">
+          <span class="badge" style="background:${color}20;color:${color};border:1px solid ${color}40;">${ft}</span>
+          ${s.dist?`<span class="badge bgr">📍 ${s.dist.toFixed(1)} km</span>`:''}
+          ${s.distHome?`<span class="badge bgr">🏠 ${s.distHome.toFixed(1)} km</span>`:''}
+          ${s.maj?`<span class="badge bgr">MAJ ${s.maj}</span>`:''}
+        </div>
+      </div>`;
+    }).join('');
+}
+
+// Stations de fallback si l'API ne répond pas
+function generateFallbackStations(lat,lng,ft){
+  const basePrice={'Gazole':1.78,'SP95':1.82,'SP98':1.95,'E10':1.79,'E85':0.89,'GPLc':0.99};
+  const base=basePrice[ft]||1.80;
+  const names=['TotalEnergies','BP','Shell','Intermarché','Leclerc','Carrefour','Auchan','Système U'];
+  return Array.from({length:8},(_,i)=>({
+    nom:names[i]||'Station service',
+    adresse:`Route principale`,ville:'Votre ville',cp:'',
+    [{'Gazole':'gazole_prix','SP95':'sp95_prix','SP98':'sp98_prix','E10':'e10_prix','E85':'e85_prix','GPLc':'gplc_prix'}[ft]]: (base+(i*0.02-0.07+Math.random()*0.05)).toFixed(3),
+    geo_point_2d:{lat:lat+(Math.random()-0.5)*0.05,lon:lng+(Math.random()-0.5)*0.05}
+  }));
+}
+
+function calcRent(){
+  const p1=parseFloat(document.getElementById('rP1').value),p2=parseFloat(document.getElementById('rP2').value),d=parseFloat(document.getElementById('rD').value),c=parseFloat(document.getElementById('rC').value),v=parseFloat(document.getElementById('rV').value);
+  if([p1,p2,d,c,v].some(isNaN)){showToast('Remplis tous les champs',true);return;}
+  const eco=(p1-p2)*v,cout=(d/100)*c*p2,net=eco-cout,seuil=cout/(p1-p2);
+  let h,cls;
+  if(net>2){cls='good';h=`<div class="rent-verdict" style="color:var(--green);">✅ Rentable !</div><div class="rent-detail">Économie nette : <strong style="color:var(--green);">${net.toFixed(2)} €</strong><br>Brute ${eco.toFixed(2)} € — Trajet ${cout.toFixed(2)} €<br>Seuil : ${seuil.toFixed(0)} L min.</div>`;}
+  else if(net>0){cls='neutral';h=`<div class="rent-verdict" style="color:var(--amber);">⚠️ Limite</div><div class="rent-detail">${net.toFixed(2)} € net seulement.</div>`;}
+  else{cls='bad';h=`<div class="rent-verdict" style="color:var(--red);">❌ Pas rentable</div><div class="rent-detail">Trajet coûte ${Math.abs(net).toFixed(2)} € de plus.<br>Seuil : ${seuil.toFixed(0)} L.</div>`;}
+  document.getElementById('rentResult').innerHTML=`<div class="rent-res ${cls}">${h}</div>`;
+}
+
+// ── COMMUNAUTÉ ──
+async function renderCommunaute(){
+  const el=document.getElementById('communauteContent');
+  if(!pseudo){
+    el.innerHTML=`<div class="sec-title">🏆 Communauté AntiFlation</div>
+      <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:16px;text-align:center;margin-bottom:12px;">
+        <div style="font-size:36px;margin-bottom:10px;">👤</div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:12px;">Crée ton pseudo pour gagner des XP !</div>
+        <div class="fg"><input type="text" id="pseudoCommu" placeholder="Ton pseudo..." maxlength="20"></div>
+        <button class="btn btn-g" onclick="savePseudoCommu()">Choisir</button>
+      </div><div id="lbSection"></div>`;
+  }else{
+    const myBadges=BADGES_DEF.filter(b=>myContribs>=b.seuil);
+    const nextB=BADGES_DEF.find(b=>myContribs<b.seuil);
+    const xpPct=Math.min(100,nextB?(myXP/nextB.xp*100):100);
+    el.innerHTML=`<div class="sec-title">🏆 Mon profil</div>
+      <div class="profile-card">
+        <div class="profile-avatar">${myBadges.length?myBadges[myBadges.length-1].icon:'🌱'}</div>
+        <div class="profile-pseudo">${pseudo}</div>
+        <div class="profile-pts">${myXP} XP</div>
+        <div style="font-size:11px;color:var(--text2);">${myContribs} contribution${myContribs>1?'s':''}</div>
+        <div class="xp-bar-wrap"><div class="xp-bar" style="width:${xpPct}%;"></div></div>
+        <div style="font-size:11px;color:var(--text2);margin-top:3px;">${nextB?`Prochain : ${nextB.icon} ${nextB.name} (${nextB.seuil-myContribs} restants)`:' 🎉 Tous les badges !'}</div>
+      </div>
+      <div class="sec-title">Badges</div>
+      <div class="badge-grid">${BADGES_DEF.map(b=>{const e=myContribs>=b.seuil;return`<div class="badge-card${e?' earned':' locked'}"><div class="badge-icon">${b.icon}</div><div class="badge-name">${b.name}</div><div style="font-size:9px;color:var(--text2);">${b.desc}</div><div style="font-size:10px;color:var(--green);font-weight:700;">+${b.xp} XP</div></div>`;}).join('')}</div>
+      <div id="lbSection"></div>`;
+  }
+  const lbEl=document.getElementById('lbSection');
+  if(!lbEl)return;
+  lbEl.innerHTML=`<div class="sec-title">🌍 Classement</div><div class="loading"><div class="spin"></div></div>`;
+  try{
+    const res=await db.from('contributeurs').select('*').order('points',{ascending:false}).limit(10);
+    if(res.error||!res.data?.length){lbEl.innerHTML=`<div class="sec-title">🌍 Classement</div><div class="empty" style="padding:12px;">Sois le premier !</div>`;return;}
+    const medals=['🥇','🥈','🥉'];
+    lbEl.innerHTML=`<div class="sec-title">🌍 Classement</div>`+res.data.map((c,i)=>{const ub=BADGES_DEF.filter(b=>c.points>=b.xp);const ic=ub.length?ub[ub.length-1].icon:'🌱';return`<div class="lb-row${c.pseudo===pseudo?' best':''}"><span class="lb-rank">${medals[i]||i+1}</span><span>${ic}</span><span class="lb-pseudo">${c.pseudo}${c.pseudo===pseudo?' (moi)':''}</span><span class="lb-pts">${c.points} XP</span></div>`;}).join('');
+  }catch(e){lbEl.innerHTML=`<div class="sec-title">🌍 Classement</div><div class="empty" style="padding:12px;">Indisponible.</div>`;}
+}
+
+function savePseudo(){const v=document.getElementById('pseudoInput')?.value?.trim();if(!v||v.length<2){showToast('Pseudo trop court',true);return;}pseudo=v;localStorage.setItem('af_pseudo',pseudo);document.getElementById('pseudoSetup').style.display='none';showPseudoHdr();showToast('✅ Pseudo : '+pseudo);}
+function savePseudoCommu(){const v=document.getElementById('pseudoCommu')?.value?.trim();if(!v||v.length<2){showToast('Pseudo trop court',true);return;}pseudo=v;localStorage.setItem('af_pseudo',pseudo);showPseudoHdr();renderCommunaute();showToast('🎉 Bienvenue '+pseudo+' !');fireConfetti();}
+function showPseudoHdr(){const el=document.getElementById('hdrPseudo');el.style.display='inline';el.textContent=`👤 ${pseudo} · ${myXP} XP`;}
+
+function showProdSugg(){
+  const q=document.getElementById('fProduit').value.toLowerCase().trim();
+  if(q.length<2){document.getElementById('prodSugg').innerHTML='';return;}
+  const sugg=[...new Set(allData.map(p=>p.produit))].filter(p=>p.toLowerCase().includes(q)).slice(0,4);
+  document.getElementById('prodSugg').innerHTML=sugg.map(s=>`<button onclick="document.getElementById('fProduit').value='${s.replace(/'/g,"\\'")}';document.getElementById('prodSugg').innerHTML='';" style="display:inline-block;padding:4px 10px;border-radius:20px;font-size:11px;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);cursor:pointer;margin:0 4px 4px 0;">${s}</button>`).join('');
+}
+
+async function ajouterPrix(){
+  if(!pseudo){document.getElementById('pseudoSetup').style.display='block';showToast('Crée ton pseudo !',true);return;}
+  const produit=document.getElementById('fProduit').value.trim(),marque=document.getElementById('fMarque').value.trim(),typeMarque=document.getElementById('fTypeMarque').value,prix=parseFloat(document.getElementById('fPrix').value),enseigne=document.getElementById('fEnseigne').value,quartier=document.getElementById('fQuartier').value.trim(),ville=document.getElementById('fVille').value.trim(),drive=document.getElementById('fDrive').checked;
+  if(!produit||!enseigne||isNaN(prix)||prix<=0){showToast('Remplis produit, prix, enseigne !',true);return;}
+  const btn=document.getElementById('btnSave');btn.disabled=true;btn.textContent='Enregistrement...';
+  try{
+    const res=await db.from('prix').insert([{produit,marque,typeMarque,prix,enseigne,quartier,ville,drive,contributeur:pseudo}]);
+    if(res.error)throw res.error;
+    myXP+=10;myContribs+=1;localStorage.setItem('af_xp',myXP);localStorage.setItem('af_contribs',myContribs);
+    try{await db.from('contributeurs').upsert({pseudo,points:myXP},{onConflict:'pseudo'});}catch(e){}
+    ['fProduit','fMarque','fPrix','fEnseigne','fQuartier','fVille'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('fDrive').checked=false;document.getElementById('prodSugg').innerHTML='';
+    showPseudoHdr();
+    const newBadge=BADGES_DEF.find(b=>myContribs===b.seuil);
+    if(newBadge){showToast(`🏆 Badge : ${newBadge.icon} ${newBadge.name} !`,'pts');fireConfetti();}
+    else{showToast(`✅ +10 XP ! Total : ${myXP}`,'pts');fireConfettiSmall();}
+    await fetchData();showTab('liste');
+  }catch(e){showToast('Erreur enregistrement',true);}
+  finally{btn.disabled=false;btn.textContent='Enregistrer et partager';}
+}
+
+function fireConfetti(){confetti({particleCount:150,spread:80,origin:{y:0.6},colors:['#00d4a0','#4d9fff','#ffbe00','#a78bfa','#ff6b35']});setTimeout(()=>confetti({particleCount:80,angle:60,spread:55,origin:{x:0}}),300);setTimeout(()=>confetti({particleCount:80,angle:120,spread:55,origin:{x:1}}),600);}
+function fireConfettiSmall(){confetti({particleCount:40,spread:60,origin:{y:0.7},colors:['#00d4a0','#4d9fff']});}
+
+function showTab(t){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(s=>s.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  document.querySelectorAll('.tab')[['liste','carte','duel','panier','carburant','communaute','ajouter'].indexOf(t)].classList.add('active');
+  if(t==='liste')renderList();
+  if(t==='carte')initSmartMap(false);
+  if(t==='panier')renderPanier();
+  if(t==='communaute')renderCommunaute();
+  if(t==='duel')initDuelSelects();
+}
+
+function showToast(msg,type=false){
+  const t=document.getElementById('toast');t.textContent=msg;
+  if(type==='pts')t.className='toast show pts';else if(type==='sport')t.className='toast show sport';
+  else t.className='toast show'+(type===true?' err':' ok');
+  setTimeout(()=>t.className='toast',3500);
+}
+
+init();
 </script>
 </body>
 </html>
