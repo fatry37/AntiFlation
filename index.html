@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="theme-color" content="#1a1a1a">
+  <title>PrixCommun — Comparez les supermarchés</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg: #f7f6f3; --surface: #ffffff; --border: #e8e6e0; --border-soft: #f0ede8;
+      --text: #1a1a1a; --text-muted: #6b6b6b; --text-hint: #a0a0a0;
+      --green: #1a7a4a; --green-bg: #eaf5ee; --green-border: #b3dfc2;
+      --amber: #8a5a00; --amber-bg: #fef6e0;
+      --blue: #1a5fa8; --blue-bg: #e8f0fb;
+      --red: #c0392b; --accent: #1a1a1a;
+      --radius: 14px; --radius-sm: 8px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body { font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; max-width: 480px; margin: 0 auto; }
+    .app-header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 18px 12px; position: sticky; top: 0; z-index: 10; }
+    .app-header h1 { font-size: 19px; font-weight: 700; letter-spacing: -0.4px; }
+    .app-header h1 span { color: var(--green); }
+    .app-header p { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+    .tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); }
+    .tab { flex: 1; padding: 11px 4px; font-size: 13px; font-weight: 600; text-align: center; border: none; background: none; cursor: pointer; color: var(--text-muted); border-bottom: 2.5px solid transparent; transition: color 0.15s, border-color 0.15s; }
+    .tab.active { color: var(--text); border-bottom-color: var(--accent); }
+    .section { display: none; padding: 16px; }
+    .section.active { display: block; }
+    label { font-size: 12px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 5px; letter-spacing: 0.02em; text-transform: uppercase; }
+    input, select { width: 100%; padding: 11px 13px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 15px; background: var(--surface); color: var(--text); outline: none; transition: border-color 0.15s; -webkit-appearance: none; appearance: none; }
+    input:focus, select:focus { border-color: var(--accent); }
+    .form-group { margin-bottom: 14px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 13px 20px; border-radius: var(--radius-sm); font-size: 15px; font-weight: 600; border: none; cursor: pointer; transition: all 0.15s; width: 100%; }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover { opacity: 0.88; }
+    .btn-primary:active { transform: scale(0.98); }
+    .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+    .search-wrap { position: relative; margin-bottom: 12px; }
+    .search-wrap input { padding-left: 38px; }
+    .search-ico { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--text-hint); pointer-events: none; }
+    .chips { display: flex; gap: 7px; overflow-x: auto; margin-bottom: 14px; padding-bottom: 2px; scrollbar-width: none; }
+    .chips::-webkit-scrollbar { display: none; }
+    .chip { padding: 5px 13px; border-radius: 20px; font-size: 12px; font-weight: 600; border: 1.5px solid var(--border); background: var(--surface); cursor: pointer; color: var(--text-muted); white-space: nowrap; transition: all 0.15s; }
+    .chip.active { background: var(--accent); color: white; border-color: var(--accent); }
+    .card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 13px 15px; margin-bottom: 9px; }
+    .card.best { border-color: var(--green-border); background: var(--green-bg); }
+    .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .card-name { font-size: 14px; font-weight: 600; flex: 1; line-height: 1.3; }
+    .card-price { font-size: 17px; font-weight: 700; white-space: nowrap; }
+    .card-meta { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 7px; }
+    .badge { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+    .badge-green { background: var(--green-bg); color: var(--green); }
+    .badge-blue { background: var(--blue-bg); color: var(--blue); }
+    .badge-amber { background: var(--amber-bg); color: var(--amber); }
+    .badge-gray { background: var(--border-soft); color: var(--text-muted); }
+    .badge-best { background: var(--green); color: white; }
+    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 16px; }
+    .stat { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 11px 13px; }
+    .stat-label { font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+    .stat-val { font-size: 22px; font-weight: 700; margin-top: 2px; }
+    .empty { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 14px; }
+    .loading { text-align: center; padding: 30px; color: var(--text-hint); font-size: 14px; }
+    .spinner { width: 22px; height: 22px; border: 2.5px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; margin-bottom: 8px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(12px); background: var(--green); color: white; padding: 11px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; opacity: 0; transition: all 0.25s; pointer-events: none; z-index: 100; white-space: nowrap; box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.error { background: var(--red); }
+    .compare-banner { background: var(--blue-bg); border: 1.5px solid #b3ccf0; border-radius: var(--radius-sm); padding: 10px 13px; font-size: 13px; font-weight: 600; color: var(--blue); margin-bottom: 12px; }
+    .section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-hint); margin-bottom: 10px; }
+    .config-box { background: #fff8e6; border: 1.5px solid #f5c842; border-radius: var(--radius-sm); padding: 15px; margin: 16px; font-size: 13px; line-height: 1.7; }
+    .config-box strong { color: #7a5000; display: block; margin-bottom: 8px; font-size: 15px; }
+    .config-box code { background: #f5e8a0; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 12px; }
+    .step { display: flex; gap: 10px; margin-bottom: 8px; }
+    .step-num { background: var(--accent); color: white; border-radius: 50%; min-width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; margin-top: 2px; }
+  </style>
+</head>
+<body>
+
+<div id="configScreen" style="display:none;">
+  <div class="app-header"><h1>Prix<span>Commun</span></h1><p>Configuration requise</p></div>
+  <div class="config-box">
+    <strong>⚙️ Connecte ta base de données Supabase</strong>
+    <div class="step"><div class="step-num">1</div><div>Va sur <strong>supabase.com</strong> → crée un compte gratuit et un nouveau projet</div></div>
+    <div class="step"><div class="step-num">2</div><div>Projet → <strong>Settings → API</strong> → copie l'URL et la clé <code>anon public</code></div></div>
+    <div class="step"><div class="step-num">3</div><div>Dans <strong>SQL Editor</strong>, exécute :<br><br>
+      <code>create table prix (<br>
+      &nbsp;&nbsp;id bigint generated always as identity primary key,<br>
+      &nbsp;&nbsp;produit text not null,<br>
+      &nbsp;&nbsp;prix numeric not null,<br>
+      &nbsp;&nbsp;enseigne text not null,<br>
+      &nbsp;&nbsp;quartier text,<br>
+      &nbsp;&nbsp;created_at timestamptz default now()<br>
+      );<br>
+      alter table prix enable row level security;<br>
+      create policy "lecture publique" on prix for select using (true);<br>
+      create policy "ajout public" on prix for insert with check (true);</code>
+    </div></div>
+    <div class="step"><div class="step-num">4</div><div>Ouvre <code>index.html</code> dans un éditeur texte et remplace <code>METS_TON_URL_ICI</code> et <code>METS_TA_CLE_ICI</code></div></div>
+  </div>
+</div>
+
+<div id="appRoot" style="display:none;">
+  <header class="app-header">
+    <h1>Prix<span>Commun</span></h1>
+    <p>Comparez les prix des supermarchés de votre ville</p>
+  </header>
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('liste')">📋 Liste</button>
+    <button class="tab" onclick="showTab('ajouter')">➕ Ajouter</button>
+    <button class="tab" onclick="showTab('comparer')">📊 Comparer</button>
+  </div>
+
+  <div id="tab-liste" class="section active">
+    <div class="stats">
+      <div class="stat"><div class="stat-label">Prix enregistrés</div><div class="stat-val" id="statTotal">—</div></div>
+      <div class="stat"><div class="stat-label">Produits distincts</div><div class="stat-val" id="statProduits">—</div></div>
+    </div>
+    <div class="search-wrap">
+      <svg class="search-ico" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="searchInput" placeholder="Rechercher un produit..." oninput="renderList()">
+    </div>
+    <div class="chips" id="filterRow"></div>
+    <div id="productList"><div class="loading"><div class="spinner"></div><br>Chargement...</div></div>
+  </div>
+
+  <div id="tab-ajouter" class="section">
+    <div class="section-title">Nouveau prix</div>
+    <div class="form-group">
+      <label>Nom du produit *</label>
+      <input type="text" id="fProduit" placeholder="Ex : Lait demi-écrémé 1L" autocomplete="off">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Prix (€) *</label>
+        <input type="number" id="fPrix" placeholder="1.29" step="0.01" min="0.01" inputmode="decimal">
+      </div>
+      <div class="form-group">
+        <label>Enseigne *</label>
+        <select id="fEnseigne">
+          <option value="">Choisir...</option>
+          <option>Leclerc</option><option>Carrefour</option><option>Auchan</option>
+          <option>Lidl</option><option>Aldi</option><option>Intermarché</option>
+          <option>Super U</option><option>Casino</option><option>Monoprix</option>
+          <option>Grand Frais</option><option>Autre</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Quartier / Zone</label>
+      <input type="text" id="fQuartier" placeholder="Ex : Centre-ville, Planoise...">
+    </div>
+    <button class="btn btn-primary" id="btnSave" onclick="ajouterPrix()">✓ Enregistrer le prix</button>
+  </div>
+
+  <div id="tab-comparer" class="section">
+    <div class="section-title">Comparaison par produit</div>
+    <div class="form-group">
+      <label>Rechercher un produit</label>
+      <input type="text" id="compareInput" placeholder="Ex : lait, beurre, pain..." oninput="renderCompare()">
+    </div>
+    <div id="compareResult"><div class="empty">Tape un nom de produit pour comparer les prix entre enseignes.</div></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ⚠️ REMPLACE CES DEUX LIGNES PAR TES INFOS SUPABASE
+  const SUPA_URL = 'https://tkawlvysfgravirojwch.supabase.co/rest/v1/';
+  const SUPA_KEY = 'sb_publishable_716fJyZJ723trkcOxGuHVw_r1LCfl9A';
+
+  let db;
+  let allData = [];
+  let activeFilter = 'Tous';
+
+  function isConfigured() {
+    return SUPA_URL !== 'METS_TON_URL_ICI' && SUPA_KEY !== 'METS_TA_CLE_ICI';
+  }
+
+  function init() {
+    if (!isConfigured()) {
+      document.getElementById('configScreen').style.display = 'block';
+      return;
+    }
+    document.getElementById('appRoot').style.display = 'block';
+    db = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+    fetchData();
+  }
+
+  async function fetchData() {
+    try {
+      const res = await db.from('prix').select('*').order('created_at', { ascending: false });
+      if (res.error) throw res.error;
+      allData = res.data || [];
+      renderList();
+    } catch (e) {
+      showToast('Erreur de connexion Supabase.', true);
+      document.getElementById('productList').innerHTML = `<div class="empty">Impossible de charger les données.<br><br>Vérifie ton URL et ta clé Supabase.</div>`;
+    }
+  }
+
+  function badgeClass(e) {
+    const m = { Lidl:'badge-green', Aldi:'badge-green', 'Grand Frais':'badge-green', Leclerc:'badge-blue', Carrefour:'badge-blue', Auchan:'badge-blue', Monoprix:'badge-amber', 'Super U':'badge-amber', 'Intermarché':'badge-amber', Casino:'badge-amber' };
+    return m[e] || 'badge-gray';
+  }
+
+  function fmtDate(d) { return new Date(d).toLocaleDateString('fr-FR', { day:'numeric', month:'short' }); }
+
+  function renderList() {
+    const q = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+    let filtered = activeFilter !== 'Tous' ? allData.filter(p => p.enseigne === activeFilter) : [...allData];
+    if (q) filtered = filtered.filter(p => p.produit.toLowerCase().includes(q));
+
+    const enseignes = [...new Set(allData.map(p => p.enseigne))].sort();
+    document.getElementById('filterRow').innerHTML =
+      `<button class="chip${activeFilter==='Tous'?' active':''}" onclick="setFilter('Tous')">Tous</button>` +
+      enseignes.map(e => `<button class="chip${activeFilter===e?' active':''}" onclick="setFilter('${e}')">${e}</button>`).join('');
+
+    document.getElementById('statTotal').textContent = allData.length;
+    document.getElementById('statProduits').textContent = [...new Set(allData.map(p => p.produit))].length;
+
+    if (!filtered.length) {
+      document.getElementById('productList').innerHTML = `<div class="empty">${q ? `Aucun résultat pour "${q}".` : 'Aucun prix pour cette enseigne.'}</div>`;
+      return;
+    }
+
+    const best = {};
+    filtered.forEach(p => { if (best[p.produit]===undefined || p.prix < best[p.produit]) best[p.produit] = p.prix; });
+    const sorted = [...filtered].sort((a,b) => a.produit.localeCompare(b.produit));
+
+    document.getElementById('productList').innerHTML = sorted.map(p => {
+      const isBest = p.prix === best[p.produit];
+      return `<div class="card${isBest?' best':''}">
+        <div class="card-top">
+          <span class="card-name">${p.produit}</span>
+          <span class="card-price">${parseFloat(p.prix).toFixed(2)} €</span>
+        </div>
+        <div class="card-meta">
+          <span class="badge ${badgeClass(p.enseigne)}">${p.enseigne}</span>
+          ${p.quartier ? `<span class="badge badge-gray">📍 ${p.quartier}</span>` : ''}
+          ${isBest ? `<span class="badge badge-best">⭐ Meilleur prix</span>` : ''}
+          <span style="font-size:11px;color:var(--text-hint);margin-left:auto;">${fmtDate(p.created_at)}</span>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function setFilter(f) { activeFilter = f; renderList(); }
+
+  function showTab(t) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(s => s.classList.remove('active'));
+    document.getElementById('tab-'+t).classList.add('active');
+    document.querySelectorAll('.tab')[['liste','ajouter','comparer'].indexOf(t)].classList.add('active');
+    if (t === 'comparer') renderCompare();
+    if (t === 'liste') renderList();
+  }
+
+  async function ajouterPrix() {
+    const produit = document.getElementById('fProduit').value.trim();
+    const prix = parseFloat(document.getElementById('fPrix').value);
+    const enseigne = document.getElementById('fEnseigne').value;
+    const quartier = document.getElementById('fQuartier').value.trim();
+    if (!produit || !enseigne || isNaN(prix) || prix <= 0) { showToast("Remplis le produit, le prix et l'enseigne !", true); return; }
+    const btn = document.getElementById('btnSave');
+    btn.disabled = true; btn.textContent = 'Enregistrement...';
+    try {
+      const res = await db.from('prix').insert([{ produit, prix, enseigne, quartier }]);
+      if (res.error) throw res.error;
+      ['fProduit','fPrix','fEnseigne','fQuartier'].forEach(id => document.getElementById(id).value = '');
+      showToast('✅ Prix enregistré et partagé !');
+      await fetchData();
+      showTab('liste');
+    } catch(e) {
+      showToast("Erreur lors de l'enregistrement", true);
+    } finally {
+      btn.disabled = false; btn.textContent = '✓ Enregistrer le prix';
+    }
+  }
+
+  function renderCompare() {
+    const q = (document.getElementById('compareInput').value || '').toLowerCase().trim();
+    const el = document.getElementById('compareResult');
+    if (!q) { el.innerHTML = `<div class="empty">Tape un nom de produit pour comparer.</div>`; return; }
+    const matching = allData.filter(p => p.produit.toLowerCase().includes(q));
+    if (!matching.length) { el.innerHTML = `<div class="empty">Aucun résultat pour "${q}".</div>`; return; }
+    const byProduct = {};
+    matching.forEach(p => { if (!byProduct[p.produit]) byProduct[p.produit]=[]; byProduct[p.produit].push(p); });
+    el.innerHTML = Object.entries(byProduct).map(([nom, items]) => {
+      const sorted = [...items].sort((a,b) => a.prix - b.prix);
+      const eco = (sorted[sorted.length-1].prix - sorted[0].prix).toFixed(2);
+      return `<div style="margin-bottom:18px;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:8px;">${nom}</div>
+        ${parseFloat(eco)>0.01 ? `<div class="compare-banner">💰 Économie possible : <strong>${eco} €</strong> en choisissant le moins cher</div>` : ''}
+        ${sorted.map((p,i) => `<div class="card${i===0?' best':''}">
+          <div class="card-top"><span class="card-name">${p.enseigne}${p.quartier?` · ${p.quartier}`:''}</span><span class="card-price">${parseFloat(p.prix).toFixed(2)} €</span></div>
+          <div class="card-meta"><span class="badge ${badgeClass(p.enseigne)}">${p.enseigne}</span>${i===0?`<span class="badge badge-best">🏆 Moins cher</span>`:''}</div>
+        </div>`).join('')}
+      </div>`;
+    }).join('');
+  }
+
+  function showToast(msg, isError=false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (isError?' error':'');
+    setTimeout(() => t.className='toast', 2800);
+  }
+
+  init();
+</script>
+</body>
+</html>
