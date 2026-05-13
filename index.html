@@ -621,43 +621,61 @@ function toggleMode(){
   renderList();renderDuel();
 }
 
-// ── PHOTOS Open Food Facts ──
-const PRODUCT_IMAGES = {
-  'Lait Lactel':'https://images.openfoodfacts.org/images/products/320/167/800/5041/front_fr.jpg',
-  'Lait Candia':'https://images.openfoodfacts.org/images/products/326/385/022/3005/front_fr.jpg',
-  'Lait MDD':'https://images.openfoodfacts.org/images/products/326/021/201/3005/front_fr.jpg',
-  'Beurre Président':'https://images.openfoodfacts.org/images/products/320/167/400/0219/front_fr.jpg',
-  'Beurre Paysan Breton':'https://images.openfoodfacts.org/images/products/342/012/900/1598/front_fr.jpg',
-  'Beurre MDD':'https://images.openfoodfacts.org/images/products/326/021/201/4002/front_fr.jpg',
-  'Pâtes Barilla':'https://images.openfoodfacts.org/images/products/008/001/311/6397/front_fr.jpg',
-  'Pâtes Panzani':'https://images.openfoodfacts.org/images/products/375/100/014/3004/front_fr.jpg',
-  'Pâtes MDD':'https://images.openfoodfacts.org/images/products/326/021/201/3012/front_fr.jpg',
-  'Œufs Loué':'https://images.openfoodfacts.org/images/products/326/033/800/2002/front_fr.jpg',
-  'Œufs MDD':'https://images.openfoodfacts.org/images/products/326/021/201/4019/front_fr.jpg',
-  'Poulet Label Rouge':'https://images.openfoodfacts.org/images/products/326/022/500/3007/front_fr.jpg',
-  'Poulet MDD':'https://images.openfoodfacts.org/images/products/326/021/201/4026/front_fr.jpg',
-  'Steak haché Socopa':'https://images.openfoodfacts.org/images/products/326/022/500/3014/front_fr.jpg',
-  'Steak haché MDD':'https://images.openfoodfacts.org/images/products/326/021/201/4033/front_fr.jpg',
-  'Yaourt Danone':'https://images.openfoodfacts.org/images/products/326/022/500/3021/front_fr.jpg',
-  'Yaourt MDD':'https://images.openfoodfacts.org/images/products/326/021/201/4040/front_fr.jpg',
-  'Nutella Ferrero':'https://images.openfoodfacts.org/images/products/301/762/042/2003/front_fr.jpg',
-  "Pain de mie Harry's":"https://images.openfoodfacts.org/images/products/326/022/500/3028/front_fr.jpg",
-  'Eau Evian':'https://images.openfoodfacts.org/images/products/326/022/500/3035/front_fr.jpg',
-  'Eau Cristaline':'https://images.openfoodfacts.org/images/products/326/022/500/3042/front_fr.jpg',
-  'Eau MDD':'https://images.openfoodfacts.org/images/products/326/021/201/4047/front_fr.jpg',
-  'Camembert Président':'https://images.openfoodfacts.org/images/products/326/022/500/3049/front_fr.jpg',
-  'Camembert MDD':'https://images.openfoodfacts.org/images/products/326/021/201/4054/front_fr.jpg',
-  'Jambon Fleury Michon':'https://images.openfoodfacts.org/images/products/326/022/500/3056/front_fr.jpg',
-  'Jambon MDD':'https://images.openfoodfacts.org/images/products/326/021/201/4061/front_fr.jpg',
-  'Café Carte Noire':'https://images.openfoodfacts.org/images/products/326/022/500/3063/front_fr.jpg',
-  'Café MDD':'https://images.openfoodfacts.org/images/products/326/021/201/4068/front_fr.jpg',
-  'Riz Uncle Bens':'https://images.openfoodfacts.org/images/products/050/000/023/8425/front_fr.jpg',
-  'Riz MDD':'https://images.openfoodfacts.org/images/products/326/021/201/4075/front_fr.jpg',
-  'Sucre Béghin Say':'https://images.openfoodfacts.org/images/products/326/022/500/3077/front_fr.jpg',
-  'Sucre MDD':'https://images.openfoodfacts.org/images/products/326/021/201/4082/front_fr.jpg',
-  'Huile Lesieur':'https://images.openfoodfacts.org/images/products/326/022/500/3084/front_fr.jpg',
-  'Huile MDD':'https://images.openfoodfacts.org/images/products/326/021/201/4089/front_fr.jpg',
+// ── PHOTOS — vrais codes-barres Open Food Facts ──
+// Format: https://images.openfoodfacts.org/images/products/[barcode_split]/front_fr.jpg
+const PRODUCT_BARCODES = {
+  'Lait Lactel':'3428271140015',      // Lactel demi-écrémé UHT 1L
+  'Lait Candia':'3228022240019',       // Candia demi-écrémé
+  'Beurre Président':'3228021250111', // Beurre Président doux 250g
+  'Beurre Paysan Breton':'3412290015980', // Paysan Breton doux 250g
+  'Pâtes Barilla':'8076800195057',    // Barilla spaghetti 500g
+  'Pâtes Panzani':'3270190013316',    // Panzani spaghetti 500g
+  'Yaourt Danone':'3033490004751',    // Danone nature x8
+  'Nutella Ferrero':'3017620422003',  // Nutella 400g
+  "Pain de mie Harry's":'3228857000906', // Harry's nature 500g
+  'Eau Evian':'3068320127576',        // Evian 6x1.5L
+  'Eau Cristaline':'3274080005003',   // Cristaline 6x1.5L
+  'Camembert Président':'3228021060105', // Camembert Président 250g
+  'Jambon Fleury Michon':'3267390104161', // Fleury Michon x4
+  'Café Carte Noire':'8711000511046', // Carte Noire 250g
+  'Riz Uncle Bens':'5000118004107',   // Uncle Bens long grain 1kg
+  'Sucre Béghin Say':'3017960049012', // Béghin Say 1kg
+  'Huile Lesieur':'3038351232004',    // Lesieur tournesol 1L
 };
+
+// Cache des images chargées
+const imgCache = {};
+
+function barcodeToUrl(barcode){
+  // Format Open Food Facts: 3017620422003 -> 301/762/042/2003
+  const b = barcode.padStart(13,'0');
+  const parts = [b.slice(0,3),b.slice(3,6),b.slice(6,9),b.slice(9)];
+  return `https://images.openfoodfacts.org/images/products/${parts.join('/')}/front_fr.400.jpg`;
+}
+
+async function getProductImage(produit){
+  if(imgCache[produit]!==undefined) return imgCache[produit];
+  // Cherche le barcode exact d'abord
+  for(const[k,v] of Object.entries(PRODUCT_BARCODES)){
+    if((produit||'').startsWith(k)){
+      const url=barcodeToUrl(v);
+      imgCache[produit]=url;
+      return url;
+    }
+  }
+  // Sinon cherche via l'API Open Food Facts
+  try{
+    const query=encodeURIComponent((produit||'').split(' ').slice(0,3).join(' '));
+    const r=await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${query}&search_simple=1&action=process&json=1&page_size=1&lc=fr&cc=fr`,{signal:AbortSignal.timeout(3000)});
+    const d=await r.json();
+    const img=d.products?.[0]?.image_front_small_url||d.products?.[0]?.image_url||null;
+    imgCache[produit]=img;
+    return img;
+  }catch(e){
+    imgCache[produit]=null;
+    return null;
+  }
+}
 
 // Emojis fallback par catégorie
 const PRODUCT_EMOJI = {
@@ -736,57 +754,77 @@ function renderList(){
     }
   });
 
-  if(currentView==='grid'){
-    document.getElementById('productList').innerHTML=`<div class="product-grid">${sorted.map(p=>{
-      const isBest=p.prix===best[p.produit],n=getNutri(p.produit);
-      const imgUrl=getProductImage(p.produit);
-      const emoji=getProductEmoji(p.produit);
-      const prixKg=p.poids?(p.prix/(p.poids/100)/10).toFixed(2):null;
-      return`<div class="card-grid${isBest?' best':''}" onclick="openModal(${JSON.stringify(p).replace(/"/g,'&quot;')})">
-        ${imgUrl
-          ?`<img class="card-grid-img" src="${imgUrl}" onerror="this.style.display='none';this.nextSibling.style.display='flex';" loading="lazy"><div class="card-grid-ph" style="display:none;">${emoji}</div>`
-          :`<div class="card-grid-ph">${emoji}</div>`}
-        <div class="card-grid-body">
-          <div class="card-grid-name">${p.produit}</div>
-          <div class="card-grid-price">${parseFloat(p.prix).toFixed(2)} €</div>
-          ${prixKg?`<div style="font-size:10px;color:var(--text3);">${prixKg} €/100g</div>`:''}
-          <div class="card-grid-meta">
-            ${logoHtml(p.enseigne)}
-            ${isBest?`<span class="badge bbest" style="font-size:9px;padding:2px 5px;">⭐</span>`:''}
-            ${n&&sportMode?`<span style="font-size:9px;color:var(--sport);font-weight:700;">${(n.prot/p.prix).toFixed(1)}g/€</span>`:''}
-          </div>
-        </div>
-      </div>`;
-    }).join('')}</div>`;
-  } else {
-    document.getElementById('productList').innerHTML=sorted.map(p=>{
-      const isBest=p.prix===best[p.produit],n=getNutri(p.produit);
-      const prixKg=p.poids?(p.prix/(p.poids/100)/10).toFixed(2):null;
-      const imgUrl=getProductImage(p.produit);
-      const emoji=getProductEmoji(p.produit);
-      const trend=p.trend_pct?`<span class="badge ${p.trend_pct>0?'bup':'bdown'}">${p.trend_pct>0?'▲':'▼'}${Math.abs(p.trend_pct).toFixed(1)}%</span>`:'';
-      return`<div class="card${isBest?' best':''}" onclick="openModal(${JSON.stringify(p).replace(/"/g,'&quot;')})">
-        <div class="card-with-photo">
-          <div class="card-ph">
-            ${imgUrl?`<img src="${imgUrl}" onerror="this.parentElement.innerHTML='${emoji}';" loading="lazy">`:`${emoji}`}
-          </div>
-          <div class="card-content">
-            <div class="card-top"><span class="card-name">${p.produit}</span><span class="card-price">${parseFloat(p.prix).toFixed(2)} €</span></div>
-            ${n&&sportMode?`<div class="card-macro">🥩 ${n.prot}g P · ${(n.prot/p.prix).toFixed(1)}g/€</div>`:''}
-            <div class="card-meta">
+  // Rendu immédiat avec emojis, puis chargement asynchrone des photos
+  const renderCards = async () => {
+    if(currentView==='grid'){
+      document.getElementById('productList').innerHTML=`<div class="product-grid">${sorted.map((p,idx)=>{
+        const isBest=p.prix===best[p.produit],n=getNutri(p.produit);
+        const emoji=getProductEmoji(p.produit);
+        const prixKg=p.poids?(p.prix/(p.poids/100)/10).toFixed(2):null;
+        return`<div class="card-grid${isBest?' best':''}" onclick="openModal(${JSON.stringify(p).replace(/"/g,'&quot;')})">
+          <div class="card-grid-ph" id="img-grid-${idx}" data-prod="${(p.produit||'').replace(/"/g,'')}">${emoji}</div>
+          <div class="card-grid-body">
+            <div class="card-grid-name">${p.produit}</div>
+            <div class="card-grid-price">${parseFloat(p.prix).toFixed(2)} €</div>
+            ${prixKg?`<div style="font-size:10px;color:var(--text3);">${prixKg} €/100g</div>`:''}
+            <div class="card-grid-meta">
               ${logoHtml(p.enseigne)}
-              ${p.marque?`<span class="${p.typeMarque==='mdd'?'marque-mdd':'marque-nat'}">${p.marque}</span>`:''}
-              ${p.drive?`<span class="badge bdrive">🚗</span>`:`<span class="badge breal">🏪</span>`}
-              ${prixKg?`<span class="badge bgr">${prixKg} €/100g</span>`:''}
-              ${isBest?`<span class="badge bbest">⭐</span>`:''}
-              ${trend}
-              ${p.communaute?`<span class="badge bcommu">👥</span>`:''}
+              ${isBest?`<span class="badge bbest" style="font-size:9px;padding:2px 5px;">⭐</span>`:''}
+              ${n&&sportMode?`<span style="font-size:9px;color:var(--sport);font-weight:700;">${(n.prot/p.prix).toFixed(1)}g/€</span>`:''}
             </div>
           </div>
-        </div>
-      </div>`;
-    }).join('');
-  }
+        </div>`;
+      }).join('')}</div>`;
+      // Charge les images en arrière-plan
+      sorted.forEach(async (p,idx)=>{
+        const url = await getProductImage(p.produit);
+        if(!url) return;
+        const el = document.getElementById(`img-grid-${idx}`);
+        if(!el) return;
+        const img = new Image();
+        img.onload = () => { el.innerHTML=`<img src="${url}" style="width:100%;height:90px;object-fit:cover;" loading="lazy">`; el.style.fontSize='0'; };
+        img.onerror = () => {};
+        img.src = url;
+      });
+    } else {
+      document.getElementById('productList').innerHTML=sorted.map((p,idx)=>{
+        const isBest=p.prix===best[p.produit],n=getNutri(p.produit);
+        const prixKg=p.poids?(p.prix/(p.poids/100)/10).toFixed(2):null;
+        const emoji=getProductEmoji(p.produit);
+        const trend=p.trend_pct?`<span class="badge ${p.trend_pct>0?'bup':'bdown'}">${p.trend_pct>0?'▲':'▼'}${Math.abs(p.trend_pct).toFixed(1)}%</span>`:'';
+        return`<div class="card${isBest?' best':''}" onclick="openModal(${JSON.stringify(p).replace(/"/g,'&quot;')})">
+          <div class="card-with-photo">
+            <div class="card-ph" id="img-list-${idx}" data-prod="${(p.produit||'').replace(/"/g,'')}">${emoji}</div>
+            <div class="card-content">
+              <div class="card-top"><span class="card-name">${p.produit}</span><span class="card-price">${parseFloat(p.prix).toFixed(2)} €</span></div>
+              ${n&&sportMode?`<div class="card-macro">🥩 ${n.prot}g P · ${(n.prot/p.prix).toFixed(1)}g/€</div>`:''}
+              <div class="card-meta">
+                ${logoHtml(p.enseigne)}
+                ${p.marque?`<span class="${p.typeMarque==='mdd'?'marque-mdd':'marque-nat'}">${p.marque}</span>`:''}
+                ${p.drive?`<span class="badge bdrive">🚗</span>`:`<span class="badge breal">🏪</span>`}
+                ${prixKg?`<span class="badge bgr">${prixKg} €/100g</span>`:''}
+                ${isBest?`<span class="badge bbest">⭐</span>`:''}
+                ${trend}
+                ${p.communaute?`<span class="badge bcommu">👥</span>`:''}
+              </div>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+      // Charge les images en arrière-plan
+      sorted.forEach(async (p,idx)=>{
+        const url = await getProductImage(p.produit);
+        if(!url) return;
+        const el = document.getElementById(`img-list-${idx}`);
+        if(!el) return;
+        const img = new Image();
+        img.onload = () => { el.innerHTML=`<img src="${url}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;" loading="lazy">`; el.style.fontSize='0'; };
+        img.onerror = () => {};
+        img.src = url;
+      });
+    }
+  };
+  renderCards();
 }
 
 function setFilter(f){activeFilter=f;renderList();}
@@ -990,23 +1028,82 @@ function calcPanier(){
   const results=enseignes.map(enseigne=>{
     let total=0,found=0,rows=[];
     panierItems.forEach(item=>{
+      // Trouve tous les produits qui correspondent au mot-clé
       const matches=allData.filter(p=>(p.produit||'').toLowerCase().includes(item.toLowerCase())&&p.enseigne===enseigne);
-      if(matches.length){const best=Math.min(...matches.map(p=>p.prix));total+=best;found++;rows.push({item,prix:best,found:true});}
-      else rows.push({item,prix:null,found:false});
+      if(matches.length){
+        // Produit le moins cher qui correspond
+        const bestProd=matches.reduce((a,b)=>a.prix<b.prix?a:b);
+        total+=bestProd.prix;found++;
+        rows.push({
+          item,
+          produit:bestProd.produit,       // nom exact du produit
+          marque:bestProd.marque||'',     // marque
+          typeMarque:bestProd.typeMarque||'',
+          prix:bestProd.prix,
+          drive:bestProd.drive,
+          poids:bestProd.poids,
+          found:true
+        });
+      } else rows.push({item,found:false});
     });
     return{enseigne,total,found,rows,coverage:found/panierItems.length};
   }).filter(r=>r.found>0).sort((a,b)=>b.coverage-a.coverage||a.total-b.total);
   if(!results.length){document.getElementById('panierResult').innerHTML=`<div class="empty">Aucun résultat.</div>`;return;}
+
   document.getElementById('panierResult').innerHTML=results.map((r,i)=>{
     const eco=i>0?(r.total-results[0].total).toFixed(2):null;
-    return`<div class="result-ens${i===0?' win':''}">
-      <div class="result-ens-top"><div style="display:flex;align-items:center;gap:7px;">${logoHtml(r.enseigne)}<div><div style="font-size:13px;font-weight:800;">${i===0?'🏆 ':''} ${r.enseigne}</div><div style="font-size:11px;color:var(--text2);">${r.found}/${panierItems.length} produits</div></div></div><div><div class="result-ens-total">${r.total.toFixed(2)} €</div>${eco?`<div style="font-size:11px;color:var(--red);text-align:right;">+${eco} €</div>`:''}</div></div>
-      <div>${r.rows.map(row=>row.found?`<div class="result-row"><span>${row.item}</span><span>${parseFloat(row.prix).toFixed(2)} €</span></div>`:`<div class="result-row" style="opacity:.4"><span>${row.item}</span><span>Non trouvé</span></div>`).join('')}</div>
+    const isWin=i===0;
+    return`<div class="result-ens${isWin?' win':''}">
+      <div class="result-ens-top">
+        <div style="display:flex;align-items:center;gap:7px;">
+          ${logoHtml(r.enseigne)}
+          <div>
+            <div style="font-size:13px;font-weight:800;">${isWin?'🏆 ':''}${r.enseigne}</div>
+            <div style="font-size:11px;color:var(--text2);">${r.found}/${panierItems.length} produits trouvés</div>
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <div class="result-ens-total">${r.total.toFixed(2)} €</div>
+          ${eco?`<div style="font-size:11px;color:var(--red);">+${eco} € vs moins cher</div>`:''}
+        </div>
+      </div>
+      <div>
+        ${r.rows.map(row=>{
+          if(!row.found) return`<div class="result-row" style="opacity:.4;"><span>${row.item}</span><span style="color:var(--text3);">Non trouvé</span></div>`;
+          const prixKg=row.poids?(row.prix/(row.poids/100)/10).toFixed(2):null;
+          const emoji=getProductEmoji(row.produit);
+          return`<div style="display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--border);">
+            <div style="width:36px;height:36px;border-radius:7px;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">${emoji}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${row.produit}</div>
+              <div style="display:flex;gap:5px;align-items:center;margin-top:3px;flex-wrap:wrap;">
+                ${row.marque?`<span class="${row.typeMarque==='mdd'?'marque-mdd':'marque-nat'}" style="font-size:10px;">${row.marque}</span>`:''}
+                ${row.drive?`<span class="badge bdrive" style="font-size:9px;padding:2px 5px;">🚗 Drive</span>`:`<span class="badge breal" style="font-size:9px;padding:2px 5px;">🏪</span>`}
+                ${prixKg?`<span style="font-size:10px;color:var(--text3);">${prixKg} €/100g</span>`:''}
+              </div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;">
+              <div style="font-size:14px;font-weight:800;color:${isWin?'var(--green)':'var(--text)'};">${parseFloat(row.prix).toFixed(2)} €</div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
     </div>`;
   }).join('');
+
+  // Liste Drive avec noms exacts
   const best=results[0];
-  const driveText=panierItems.map((item,i)=>{const r=best.rows.find(r=>r.item===item);return`${i+1}. ${item}${r?.prix?' → '+parseFloat(r.prix).toFixed(2)+' €':''}`;}).join('\n');
-  document.getElementById('driveList').innerHTML=`<div class="drive-list-box"><div class="drive-list-title">${logoHtml(best.enseigne)} Liste Drive — ${best.enseigne} · ${best.total.toFixed(2)} €</div><div class="drive-list-text">${driveText}</div><button class="btn btn-outline" onclick="copyDrive()" style="margin-top:8px;">📋 Copier</button></div>`;
+  const driveText=best.rows.map((row,i)=>{
+    if(!row.found) return`${i+1}. ${row.item} → ❌ Non trouvé`;
+    return`${i+1}. ${row.produit}${row.marque?' ('+row.marque+')':''} → ${parseFloat(row.prix).toFixed(2)} €${row.drive?' [Drive]':''}`;
+  }).join('\n');
+
+  document.getElementById('driveList').innerHTML=`<div class="drive-list-box">
+    <div class="drive-list-title">${logoHtml(best.enseigne)} Liste Drive — ${best.enseigne} · ${best.total.toFixed(2)} €</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:8px;">Noms exacts à copier dans la barre de recherche du Drive</div>
+    <div class="drive-list-text">${driveText}</div>
+    <button class="btn btn-outline" onclick="copyDrive()" style="margin-top:8px;">📋 Copier la liste</button>
+  </div>`;
 }
 function copyDrive(){navigator.clipboard.writeText(document.querySelector('.drive-list-text')?.textContent||'').then(()=>showToast('Copié 📋')).catch(()=>showToast('Erreur copie',true));}
 
