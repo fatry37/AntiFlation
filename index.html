@@ -1048,6 +1048,7 @@ function setFilter(f){activeFilter=f;renderList();}
 
 // ── MODAL ──
 function openModal(p){
+  window._currentModalProd=p;
   const n=getNutri(p.produit);
   const history=allData.filter(x=>x.produit===p.produit).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
   const prixKg=p.poids?(p.prix/(p.poids/100)/10).toFixed(2):null;
@@ -1083,6 +1084,8 @@ function openModal(p){
 
 function closeModal(e){if(!e||e.target===document.getElementById('modalOverlay'))document.getElementById('modalOverlay').classList.add('hidden');}
 function addToPanierFromModal(){
+  if(window._currentModalProd){addToPanier(window._currentModalProd.produit||window._currentModalProd.name||'');}
+}
 function addToPanier(prod){if(!panierItems.includes(prod)){panierItems.push(prod);savePanier();}closeModal();showToast('Ajouté au panier 🧺');}
 
 // ── CARTE SMART ──
@@ -1681,53 +1684,95 @@ async function scanTicket(event){
     renderScanResult(items, text);
   }catch(err){
     document.getElementById('scanLoader').style.display='none';
-    document.getElementById('scanResult').innerHTML=`<div class="empty">Erreur OCR : ${err.message}<br><br>Assure-toi que l'image est nette et bien éclairée.</div>`;\n  }\n}\n\nfunction parseTicket(rawText){\n  const lines=rawText.split('\n').map(l=>l.trim()).filter(l=>l.length>2);\n  const items=[];\n  const priceRegex=/(\d+[.,]\d{2})\s*[€E]?\s*$/;\n  const skipWords=['total','ttc','tva','carte','merci','ticket','date','heure','caisse','avoir','rendu','especes','cb','visa','master'];\n\n  lines.forEach(line=>{\n    const lower=line.toLowerCase();\n    if(skipWords.some(w=>lower.includes(w))) return;\n    const priceMatch=line.match(priceRegex);\n    if(priceMatch){\n      const prix=parseFloat(priceMatch[1].replace(',','.'));\n      if(prix>0&&prix<500){\n        // Nettoie le nom du produit\n        let nom=line.replace(priceRegex,'').trim();\n        nom=nom.replace(/^\d+\s+/,'').replace(/\s+\d+\s*$/,'').trim();\n        if(nom.length>2&&nom.length<60){\n          items.push({nom:nom.toUpperCase(),prix,selected:true});\n        }\n      }\n    }\n  });\n  return items;\n}\n\nfunction renderScanResult(items, rawText){\n  if(!items.length){\n    document.getElementById('scanResult').innerHTML=`<div style="margin-bottom:10px;">\n      <div class="empty" style="padding:16px;">Aucun produit détecté automatiquement.<br>L'image est-elle nette et bien éclairée ?</div>
-      <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--rsm);padding:10px;font-size:10px;color:var(--text3);font-family:monospace;max-height:120px;overflow-y:auto;">${rawText.replace(/</g,'&lt;')}</div>
-    </div>`;
+    document.getElementById('scanResult').innerHTML=`<div class="empty">Erreur OCR : ${err.message}<br><br>Assure-toi que l'image est nette et bien éclairée.</div>`;\n  }\n}
+
+function parseTicket(rawText){
+  var lines=rawText.split('\n').map(function(l){return l.trim();}).filter(function(l){return l.length>2;});
+  var items=[];
+  var skipWords=['total','ttc','tva','carte','merci','ticket','date','heure','caisse','avoir','rendu','especes','cb','visa','master'];
+  lines.forEach(function(line){
+    var lower=line.toLowerCase();
+    if(skipWords.some(function(w){return lower.indexOf(w)>=0;})) return;
+    var parts=line.match(/([0-9]+[,\.][0-9]{2})/g);
+    if(parts&&parts.length){
+      var priceStr=parts[parts.length-1];
+      var prix=parseFloat(priceStr.replace(',','.'));
+      if(prix>0&&prix<500){
+        var nom=line.replace(priceStr,'').replace(/[0-9]{1,2}x/gi,'').replace(/^\s*[0-9]+\s+/,'').trim();
+        nom=nom.replace(/\s+/,' ').trim();
+        if(nom.length>2&&nom.length<60){
+          items.push({nom:nom.toUpperCase(),prix:prix,selected:true});
+        }
+      }
+    }
+  });
+  return items;
+}
+
+function renderScanResult(items, rawText){
+  if(!items.length){
+    document.getElementById('scanResult').innerHTML='<div class="empty" style="padding:16px;">Aucun produit détecté. Image floue ?</div>';
     return;
   }
-
   window._scanItems=items;
-  document.getElementById('scanResult').innerHTML=`
-    <div style="font-size:11px;font-weight:800;color:var(--green);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">
-      ✅ ${items.length} produit${items.length>1?'s':''} détecté${items.length>1?'s':''}
-    </div>
-    <div style="font-size:11px;color:var(--text2);margin-bottom:10px;">Coche les produits à importer, corrige les noms si besoin :</div>
-    <div id="scanItemsList">
-      ${items.map((item,i)=>`
-        <div class="scan-item">
-          <input type="checkbox" id="sc${i}" ${item.selected?'checked':''} style="width:18px;height:18px;accent-color:var(--green);flex-shrink:0;" onchange="window._scanItems[${i}].selected=this.checked">
-          <div style="flex:1;min-width:0;">
-            <input type="text" value="${item.nom}" onchange="window._scanItems[${i}].nom=this.value" style="font-size:12px;padding:5px 8px;margin-bottom:3px;">
-            <div style="font-size:11px;color:var(--text3);">Prix détecté : ${item.prix.toFixed(2)} €</div>
-          </div>
-          <div style="font-size:13px;font-weight:800;color:var(--green);flex-shrink:0;">${item.prix.toFixed(2)} €</div>
-        </div>`).join('')}
-    </div>
-    <div class="fr" style="margin-top:12px;">
-      <div class="fg" style="margin-bottom:0;">
-        <label>Enseigne *</label>
-        <select id="scanEnseigne">
-          <option value="">Choisir...</option>
-          <option>Leclerc</option><option>Carrefour</option><option>Lidl</option><option>Aldi</option><option>Intermarché</option><option>Auchan</option><option>Autre</option>
-        </select>
-      </div>
-      <div class="fg" style="margin-bottom:0;">
-        <label>Ville</label>
-        <input type="text" id="scanVille" placeholder="Besançon...">
-      </div>
-    </div>
-    <button class="btn btn-g" onclick="importScanToSupabase()" style="margin-top:10px;">⬆️ Importer vers Supabase</button>
-    <button class="btn btn-outline" onclick="importScanToPanier()" style="margin-top:6px;">🧺 Ajouter au panier</button>`;
+  var html='<div style="font-size:11px;font-weight:800;color:var(--green);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">✅ '+items.length+' produit'+(items.length>1?'s':'')+' détecté'+(items.length>1?'s':'')+'</div>';
+  html+='<div style="font-size:11px;color:var(--text2);margin-bottom:10px;">Coche les produits à importer :</div>';
+  html+='<div id="scanItemsList">';
+  items.forEach(function(item,i){
+    html+='<div class="scan-item">';
+    html+='<input type="checkbox" id="sc'+i+'" '+(item.selected?'checked':'')+' style="width:18px;height:18px;accent-color:var(--green);flex-shrink:0;" onchange="window._scanItems['+i+'].selected=this.checked">';
+    html+='<div style="flex:1;min-width:0;">';
+    html+='<input type="text" value="'+item.nom.replace(/"/g,'&quot;')+'" onchange="window._scanItems['+i+'].nom=this.value" style="font-size:12px;padding:5px 8px;margin-bottom:3px;">';
+    html+='<div style="font-size:11px;color:var(--text3);">Prix : '+item.prix.toFixed(2)+' €</div>';
+    html+='</div>';
+    html+='<div style="font-size:13px;font-weight:800;color:var(--green);flex-shrink:0;">'+item.prix.toFixed(2)+' €</div>';
+    html+='</div>';
+  });
+  html+='</div>';
+  html+='<div class="fr" style="margin-top:12px;">';
+  html+='<div class="fg" style="margin-bottom:0;"><label>Enseigne *</label><select id="scanEnseigne"><option value="">Choisir...</option><option>Leclerc</option><option>Carrefour</option><option>Lidl</option><option>Aldi</option><option>Intermarché</option><option>Auchan</option><option>Autre</option></select></div>';
+  html+='<div class="fg" style="margin-bottom:0;"><label>Ville</label><input type="text" id="scanVille" placeholder="Besançon..."></div>';
+  html+='</div>';
+  html+='<button class="btn btn-g" onclick="importScanToSupabase()" style="margin-top:10px;">⬆️ Importer vers Supabase</button>';
+  html+='<button class="btn btn-outline" onclick="importScanToPanier()" style="margin-top:6px;">🧺 Ajouter au panier</button>';
+  document.getElementById('scanResult').innerHTML=html;
 }
 
 async function importScanToSupabase(){
-  const enseigne=document.getElementById('scanEnseigne')?.value;
-  const ville=document.getElementById('scanVille')?.value||'';
+  var enseigne=document.getElementById('scanEnseigne')?document.getElementById('scanEnseigne').value:'';
+  var ville=document.getElementById('scanVille')?document.getElementById('scanVille').value:'';
   if(!enseigne){showToast('Choisis une enseigne !',true);return;}
-  const items=window._scanItems?.filter(i=>i.selected)??[];
+  var items=(window._scanItems||[]).filter(function(i){return i.selected;});
   if(!items.length){showToast('Sélectionne au moins un produit',true);return;}
-  if(!pseudo){showToast('Crée ton pseudo d'abord !',true);return;}\n\n  // Transforme en JSON Supabase\n  const records=items.map(item=>({\n    produit: item.nom.charAt(0)+item.nom.slice(1).toLowerCase(),\n    marque: '',\n    typeMarque: 'mdd',\n    prix: item.prix,\n    enseigne, ville,\n    drive: false,\n    contributeur: pseudo,\n    source: 'scan-ticket',\n  }));\n\n  try{\n    const res=await db.from('prix').insert(records);\n    if(res.error)throw res.error;\n    myXP+=records.length*5;myContribs+=records.length;\n    localStorage.setItem('af_xp',myXP);localStorage.setItem('af_contribs',myContribs);\n    try{await db.from('contributeurs').upsert({pseudo,points:myXP},{onConflict:'pseudo'});}catch(e){}\n    showPseudoHdr();\n    showToast(`✅ ${records.length} prix importés ! +${records.length*5} XP`,'pts');\n    fireConfetti();\n    await fetchData();\n  }catch(e){\n    showToast('Erreur Supabase : '+e.message,true);\n    console.error('Scan import error:',e,'
-JSON preview:',JSON.stringify(records,null,2));\n  }\n}\n\nfunction importScanToPanier(){\n  const items=window._scanItems?.filter(i=>i.selected)??[];\n  items.forEach(item=>{\n    const nom=item.nom.charAt(0)+item.nom.slice(1).toLowerCase();\n    if(!panierItems.includes(nom)) panierItems.push(nom);\n  });\n  savePanier();\n  updateCartBadge();\n  showToast(`🧺 ${items.length} produit${items.length>1?'s':''} ajouté${items.length>1?'s':''} au panier !`);\n  setPanierTab('presets');\n}\n\n// ── ANIMATIONS PANIER ──\nfunction flyToCart(e, produit){\n  e.preventDefault();\n  const btn = e.currentTarget;\n  btn.classList.add('add-pop');\n  setTimeout(()=>btn.classList.remove('add-pop'),250);\n\n  const btnRect = btn.getBoundingClientRect();\n  const cartBtn = document.getElementById('cartHeaderBtn');\n  const cartRect = cartBtn ? cartBtn.getBoundingClientRect() : {left:window.innerWidth-50,top:10};\n\n  const startX = btnRect.left + btnRect.width/2 - 13;\n  const startY = btnRect.top + btnRect.height/2 - 13;\n  const dx = (cartRect.left + cartRect.width/2) - startX;\n  const dy = (cartRect.top + cartRect.height/2) - startY;\n\n  // Crée le emoji volant\n  const fly = document.createElement('div');\n  fly.className = 'fly-emoji';\n  fly.textContent = produit.emoji || getProductEmoji(produit.produit||'');\n  fly.style.left = startX + 'px';\n  fly.style.top = startY + 'px';\n  fly.style.setProperty('--dx', dx);\n  fly.style.setProperty('--dy', dy);\n  document.body.appendChild(fly);\n  fly.addEventListener('animationend', () => fly.remove());\n\n  // Ajoute au panier après 580ms\n  setTimeout(() => {\n    const v = produit.produit || produit.name;\n    if(v && !panierItems.includes(v)){\n      panierItems.push(v);\n      savePanier();\n    }\n    updateCartBadge();\n    // Rebond sur le bouton cart\n    const cb = document.getElementById('cartHeaderBtn');\n    if(cb){ cb.classList.remove('cart-bounce'); void cb.offsetWidth; cb.classList.add('cart-bounce'); setTimeout(()=>cb.classList.remove('cart-bounce'),400); }\n    showToast(`${produit.emoji||'🛒'} Ajouté au panier !`);\n  }, 580);\n}\n\nfunction updateCartBadge(){\n  const badge = document.getElementById('cartBadge');\n  if(!badge) return;\n  const n = panierItems.length;\n  if(n > 0){ badge.style.display='flex'; badge.textContent=n; }\n  else { badge.style.display='none'; }\n}\n\ninit();\n// Mise à jour du badge au chargement\nsetTimeout(updateCartBadge, 500);\n</script>
+  if(!pseudo){showToast('Crée ton pseudo !',true);return;}
+  var records=items.map(function(item){
+    return {produit:item.nom.charAt(0)+item.nom.slice(1).toLowerCase(),marque:'',typeMarque:'mdd',prix:item.prix,enseigne:enseigne,ville:ville,drive:false,contributeur:pseudo,source:'scan-ticket'};
+  });
+  try{
+    var res=await db.from('prix').insert(records);
+    if(res.error)throw res.error;
+    myXP+=records.length*5;myContribs+=records.length;
+    localStorage.setItem('af_xp',myXP);localStorage.setItem('af_contribs',myContribs);
+    try{await db.from('contributeurs').upsert({pseudo:pseudo,points:myXP},{onConflict:'pseudo'});}catch(e){}
+    showPseudoHdr();
+    showToast('✅ '+records.length+' prix importés ! +'+records.length*5+' XP','pts');
+    fireConfetti();
+    await fetchData();
+  }catch(e){showToast('Erreur : '+e.message,true);}
+}
+
+function importScanToPanier(){
+  var items=(window._scanItems||[]).filter(function(i){return i.selected;});
+  items.forEach(function(item){
+    var nom=item.nom.charAt(0)+item.nom.slice(1).toLowerCase();
+    if(!panierItems.includes(nom)) panierItems.push(nom);
+  });
+  savePanier();
+  updateCartBadge();
+  showToast('🧺 '+items.length+' produit'+(items.length>1?'s':'')+' ajouté'+(items.length>1?'s':'')+' au panier !');
+  setPanierTab('presets');
+}
+
+// ── ANIMATIONS PANIER ──\nfunction flyToCart(e, produit){\n  e.preventDefault();\n  const btn = e.currentTarget;\n  btn.classList.add('add-pop');\n  setTimeout(()=>btn.classList.remove('add-pop'),250);\n\n  const btnRect = btn.getBoundingClientRect();\n  const cartBtn = document.getElementById('cartHeaderBtn');\n  const cartRect = cartBtn ? cartBtn.getBoundingClientRect() : {left:window.innerWidth-50,top:10};\n\n  const startX = btnRect.left + btnRect.width/2 - 13;\n  const startY = btnRect.top + btnRect.height/2 - 13;\n  const dx = (cartRect.left + cartRect.width/2) - startX;\n  const dy = (cartRect.top + cartRect.height/2) - startY;\n\n  // Crée le emoji volant\n  const fly = document.createElement('div');\n  fly.className = 'fly-emoji';\n  fly.textContent = produit.emoji || getProductEmoji(produit.produit||'');\n  fly.style.left = startX + 'px';\n  fly.style.top = startY + 'px';\n  fly.style.setProperty('--dx', dx);\n  fly.style.setProperty('--dy', dy);\n  document.body.appendChild(fly);\n  fly.addEventListener('animationend', () => fly.remove());\n\n  // Ajoute au panier après 580ms\n  setTimeout(() => {\n    const v = produit.produit || produit.name;\n    if(v && !panierItems.includes(v)){\n      panierItems.push(v);\n      savePanier();\n    }\n    updateCartBadge();\n    // Rebond sur le bouton cart\n    const cb = document.getElementById('cartHeaderBtn');\n    if(cb){ cb.classList.remove('cart-bounce'); void cb.offsetWidth; cb.classList.add('cart-bounce'); setTimeout(()=>cb.classList.remove('cart-bounce'),400); }\n    showToast(`${produit.emoji||'🛒'} Ajouté au panier !`);\n  }, 580);\n}\n\nfunction updateCartBadge(){\n  const badge = document.getElementById('cartBadge');\n  if(!badge) return;\n  const n = panierItems.length;\n  if(n > 0){ badge.style.display='flex'; badge.textContent=n; }\n  else { badge.style.display='none'; }\n}\n\ninit();\n// Mise à jour du badge au chargement\nsetTimeout(updateCartBadge, 500);\n</script>
 </body>
 </html>
