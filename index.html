@@ -252,7 +252,52 @@ body.sport-mode .card-macro{display:block;}
 @keyframes spin{to{transform:rotate(360deg)}}
 .sec-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:var(--text3);margin-bottom:11px;}
 .divider{border:none;border-top:1px solid var(--border);margin:13px 0;}
+/* ANIMATIONS PANIER */
+@keyframes flyArc{
+  0%{opacity:1;transform:scale(1) translate(0px,0px);}
+  55%{opacity:1;transform:scale(1.5) translate(calc(var(--dx)*0.48px),calc(var(--dy)*0.38px));}
+  100%{opacity:0;transform:scale(0.1) translate(calc(var(--dx)*1px),calc(var(--dy)*1px));}
+}
+@keyframes cartBounce{
+  0%,100%{transform:scale(1)}
+  25%{transform:scale(1.45)}
+  55%{transform:scale(0.85)}
+  75%{transform:scale(1.12)}
+}
+@keyframes fadeSlideUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+@keyframes addPop{0%{transform:scale(1)}50%{transform:scale(1.35)}100%{transform:scale(1)}}
+.fly-emoji{position:fixed;z-index:9999;pointer-events:none;font-size:26px;line-height:1;animation:flyArc .62s cubic-bezier(.25,.46,.45,.94) forwards;}
+.cart-bounce{animation:cartBounce .4s ease;}
+.fade-slide-up{animation:fadeSlideUp .3s ease;}
+.add-pop{animation:addPop .25s ease;}
+/* CART BUTTON DANS LE HEADER */
+.cart-header-btn{position:relative;width:42px;height:42px;border-radius:12px;border:1px solid rgba(0,212,160,.2);background:rgba(0,212,160,.07);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:transform .1s;flex-shrink:0;}
+.cart-header-btn:active{transform:scale(.9);}
+.cart-badge{position:absolute;top:-5px;right:-5px;background:var(--green);color:#001a12;border-radius:20px;min-width:18px;height:18px;font-size:9px;font-weight:900;display:flex;align-items:center;justify-content:center;padding:0 3px;display:none;}
+/* BOUTON AJOUTER SUR CHAQUE PRODUIT */
+.prod-add-btn{width:34px;height:34px;border-radius:50%;border:none;cursor:pointer;font-size:16px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .1s,background .15s;}
+.prod-add-btn:active{transform:scale(.8);}
+/* PANIER ITEM ANIMÉ */
+.panier-item{display:flex;align-items:center;gap:10px;padding:10px 13px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--rsm);margin-bottom:7px;animation:fadeSlideUp .25s ease;}
 .info-box{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:11px 13px;font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:12px;}
+/* COMPARATEUR */
+.cmp-winner{border-color:var(--gborder)!important;background:var(--gbg)!important;}
+.cmp-loser{opacity:.55;}
+.cmp-card{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:14px;flex:1;}
+.cmp-ens-name{font-size:15px;font-weight:800;margin-bottom:8px;}
+.cmp-total{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;margin:8px 0;}
+.cmp-row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:.5px solid var(--border);color:var(--text2);}
+.cmp-row:last-child{border-bottom:none;}
+.cmp-row span:last-child{font-weight:700;color:var(--text);}
+/* DÉTOUR */
+.detour-good{background:var(--gbg);border:1px solid var(--gborder);border-radius:var(--r);padding:16px;text-align:center;}
+.detour-bad{background:var(--rbg);border:1px solid var(--rborder);border-radius:var(--r);padding:16px;text-align:center;}
+.detour-neutral{background:var(--abg);border:1px solid var(--aborder);border-radius:var(--r);padding:16px;text-align:center;}
+.detour-verdict{font-size:22px;font-weight:800;margin-bottom:8px;}
+.detour-detail{font-size:13px;color:var(--text2);line-height:1.8;}
+/* SCAN */
+.scan-item{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--rsm);margin-bottom:7px;}
+.scan-item input{padding:6px 10px;font-size:13px;}
 </style>
 </head>
 <body>
@@ -263,6 +308,10 @@ body.sport-mode .card-macro{display:block;}
     <div style="display:flex;align-items:center;gap:8px;">
       <div class="live"><div class="live-dot"></div></div>
       <div class="mode-toggle" id="modeToggle" onclick="toggleMode()"><span id="modeIcon">🛒</span><span id="modeLabel">Standard</span></div>
+      <button class="cart-header-btn" id="cartHeaderBtn" onclick="showTab('panier')" title="Mon panier">
+        🧺
+        <span class="cart-badge" id="cartBadge"></span>
+      </button>
     </div>
   </div>
   <div class="hdr-sub">
@@ -349,17 +398,99 @@ body.sport-mode .card-macro{display:block;}
 
   <!-- PANIER -->
   <div id="tab-panier" class="section">
-    <div class="sec-title">🧺 Paniers pré-configurés</div>
-    <div class="panier-grid" id="panierPresets"></div>
-    <hr class="divider">
-    <div class="sec-title">Mon panier personnalisé</div>
-    <div style="display:flex;gap:8px;margin-bottom:8px;">
-      <input type="text" id="panierInput" placeholder="Ajouter un produit..." onkeydown="if(event.key==='Enter')addPanierItem()" style="flex:1;">
-      <button class="btn btn-g btn-sm" onclick="addPanierItem()">＋</button>
+    <!-- SOUS-ONGLETS PANIER -->
+    <div style="display:flex;gap:6px;margin-bottom:14px;background:var(--bg3);border-radius:var(--r);padding:4px;">
+      <button class="panier-subtab active" id="pst1" onclick="setPanierTab('presets')" style="flex:1;padding:8px;border:none;border-radius:10px;background:var(--green);color:#001a12;font-size:11px;font-weight:800;cursor:pointer;">🧺 Paniers</button>
+      <button class="panier-subtab" id="pst2" onclick="setPanierTab('comparateur')" style="flex:1;padding:8px;border:none;border-radius:10px;background:none;color:var(--text3);font-size:11px;font-weight:800;cursor:pointer;">⚡ Comparateur</button>
+      <button class="panier-subtab" id="pst3" onclick="setPanierTab('detour')" style="flex:1;padding:8px;border:none;border-radius:10px;background:none;color:var(--text3);font-size:11px;font-weight:800;cursor:pointer;">🚗 Détour</button>
+      <button class="panier-subtab" id="pst4" onclick="setPanierTab('scan')" style="flex:1;padding:8px;border:none;border-radius:10px;background:none;color:var(--text3);font-size:11px;font-weight:800;cursor:pointer;">📷 Scan</button>
     </div>
-    <div id="panierList"></div>
-    <div id="panierResult"></div>
-    <div id="driveList"></div>
+
+    <!-- PANIERS PRÉSETS -->
+    <div id="pTab-presets">
+      <div class="sec-title">🧺 Paniers pré-configurés</div>
+      <div class="panier-grid" id="panierPresets"></div>
+      <hr class="divider">
+      <div class="sec-title">Mon panier personnalisé</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <input type="text" id="panierInput" placeholder="Ajouter un produit..." onkeydown="if(event.key==='Enter')addPanierItem()" style="flex:1;">
+        <button class="btn btn-g btn-sm" onclick="addPanierItem()">＋</button>
+      </div>
+      <div id="panierList"></div>
+      <div id="panierResult"></div>
+      <div id="driveList"></div>
+    </div>
+
+    <!-- COMPARATEUR 2 ENSEIGNES -->
+    <div id="pTab-comparateur" style="display:none;">
+      <div class="sec-title">⚡ Comparer 2 enseignes sur mon panier</div>
+      <div class="info-box" style="margin-bottom:14px;">Sélectionne 2 enseignes et l'app calcule quelle est la moins chère pour <strong style="color:var(--green);">l'ensemble de ton panier</strong>.</div>
+      <div class="fr" style="margin-bottom:12px;">
+        <div class="fg" style="margin-bottom:0;">
+          <label>Enseigne A</label>
+          <select id="cmpEnsA" onchange="renderComparateur()">
+            <option value="">Choisir...</option>
+            <option>Leclerc</option><option>Carrefour</option><option>Lidl</option>
+            <option>Aldi</option><option>Intermarché</option><option>Auchan</option>
+          </select>
+        </div>
+        <div class="fg" style="margin-bottom:0;">
+          <label>Enseigne B</label>
+          <select id="cmpEnsB" onchange="renderComparateur()">
+            <option value="">Choisir...</option>
+            <option>Leclerc</option><option>Carrefour</option><option>Lidl</option>
+            <option>Aldi</option><option>Intermarché</option><option>Auchan</option>
+          </select>
+        </div>
+      </div>
+      <!-- Filtre zone géographique -->
+      <div class="fg" style="margin-bottom:10px;">
+        <label>📍 Filtrer par zone géographique</label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;" id="zoneFilterRow">
+          <button class="chip active" onclick="setZoneFilter(null)" id="zoneAll">Toutes zones</button>
+        </div>
+      </div>
+      <div id="comparateurResult"></div>
+    </div>
+
+    <!-- DÉTOUR RENTABLE -->
+    <div id="pTab-detour" style="display:none;">
+      <div class="sec-title">🚗 Mon détour vaut-il le coup ?</div>
+      <div class="info-box" style="margin-bottom:14px;">Compare le coût réel de ton panier entre un magasin proche et un magasin plus loin, en incluant les frais de déplacement.</div>
+      <div class="fr">
+        <div class="fg"><label>💰 Panier magasin proche (€)</label><input type="number" id="dtPanierProche" placeholder="45.00" step="0.01" inputmode="decimal"></div>
+        <div class="fg"><label>💸 Panier magasin loin (€)</label><input type="number" id="dtPanierLoin" placeholder="38.50" step="0.01" inputmode="decimal"></div>
+      </div>
+      <div class="fr">
+        <div class="fg"><label>📏 Distance A/R supplémentaire (km)</label><input type="number" id="dtDist" placeholder="8" step="1" inputmode="numeric"></div>
+        <div class="fg"><label>🚗 Coût au km (€, défaut 0.40)</label><input type="number" id="dtCoutKm" placeholder="0.40" step="0.01" value="0.40" inputmode="decimal"></div>
+      </div>
+      <div class="fg">
+        <label>🏪 Nom du magasin loin (optionnel)</label>
+        <input type="text" id="dtNomMag" placeholder="Ex : Leclerc Châteaufarine">
+      </div>
+      <button class="btn btn-g" onclick="calcDetour()">🧮 Calculer la rentabilité</button>
+      <div id="detourResult" style="margin-top:14px;"></div>
+    </div>
+
+    <!-- SCAN TICKET DE CAISSE -->
+    <div id="pTab-scan" style="display:none;">
+      <div class="sec-title">📷 Scanner un ticket de caisse</div>
+      <div class="info-box" style="margin-bottom:14px;">
+        Prends une photo de ton ticket → l'app extrait automatiquement les produits et prix grâce à l'OCR Tesseract.js.
+      </div>
+      <div style="border:2px dashed var(--border2);border-radius:var(--r);padding:24px;text-align:center;margin-bottom:14px;cursor:pointer;" onclick="document.getElementById('ticketFile').click()">
+        <div style="font-size:40px;margin-bottom:8px;">📷</div>
+        <div style="font-size:14px;font-weight:700;color:var(--text2);">Appuyer pour photographier</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:4px;">ou importer une image de ticket</div>
+        <input type="file" id="ticketFile" accept="image/*" capture="environment" style="display:none;" onchange="scanTicket(event)">
+      </div>
+      <div id="scanPreview" style="display:none;margin-bottom:12px;">
+        <img id="scanImg" style="width:100%;border-radius:var(--rsm);max-height:200px;object-fit:cover;">
+      </div>
+      <div id="scanLoader" style="display:none;" class="loading"><div class="spin"></div><br>Analyse du ticket en cours...</div>
+      <div id="scanResult"></div>
+    </div>
   </div>
 
   <!-- CARBURANT -->
@@ -384,12 +515,18 @@ body.sport-mode .card-macro{display:block;}
     <div id="fuelResults"><div class="empty">Géolocalise-toi pour voir les stations.</div></div>
     <hr class="divider">
     <div class="rent-box">
-      <div class="sec-title">🧮 Détour rentable ?</div>
+      <div class="sec-title">🧮 Détour carburant rentable ?</div>
       <div class="fr"><div class="fg"><label>Prix proche €/L</label><input type="number" id="rP1" placeholder="1.85" step="0.001" inputmode="decimal"></div><div class="fg"><label>Prix loin €/L</label><input type="number" id="rP2" placeholder="1.72" step="0.001" inputmode="decimal"></div></div>
       <div class="fr"><div class="fg"><label>Distance A/R km</label><input type="number" id="rD" placeholder="10" step="1" inputmode="numeric"></div><div class="fg"><label>Conso L/100km</label><input type="number" id="rC" placeholder="7" step="0.1" inputmode="decimal"></div></div>
       <div class="fg"><label>Volume plein L</label><input type="number" id="rV" placeholder="50" step="5" inputmode="numeric"></div>
       <button class="btn btn-g" onclick="calcRent()">Calculer</button>
       <div id="rentResult"></div>
+    </div>
+    <!-- Filtre carte par zone -->
+    <hr class="divider">
+    <div class="sec-title">🗺 Filtrer la carte par zone</div>
+    <div style="display:flex;gap:6px;overflow-x:auto;margin-bottom:10px;padding-bottom:2px;scrollbar-width:none;" id="mapZoneRow">
+      <button class="chip active" onclick="filterSmartMapZone(null)">Toutes zones</button>
     </div>
   </div>
 
@@ -527,24 +664,101 @@ const NUTRI={
   'Nutella':{kcal:539,prot:6.3,gluc:57.5,lip:30.9,allergenes:['Gluten','Lait','Fruits à coques']},
 };
 
-const MAGASINS=[
-  {name:'Carrefour Besançon',enseigne:'Carrefour',lat:47.237,lng:6.024,ville:'Besançon'},
-  {name:'Leclerc Planoise',enseigne:'Leclerc',lat:47.231,lng:5.982,ville:'Besançon'},
-  {name:'Lidl Besançon',enseigne:'Lidl',lat:47.248,lng:6.021,ville:'Besançon'},
-  {name:'Aldi Besançon',enseigne:'Aldi',lat:47.242,lng:6.032,ville:'Besançon'},
-  {name:'Intermarché Besançon',enseigne:'Intermarché',lat:47.255,lng:6.040,ville:'Besançon'},
-  {name:'Leclerc Paris Nation',enseigne:'Leclerc',lat:48.848,lng:2.396,ville:'Paris'},
-  {name:'Carrefour Opéra',enseigne:'Carrefour',lat:48.872,lng:2.333,ville:'Paris'},
-  {name:'Lidl Bagnolet',enseigne:'Lidl',lat:48.863,lng:2.417,ville:'Paris'},
-  {name:'Intermarché Paris 11e',enseigne:'Intermarché',lat:48.857,lng:2.378,ville:'Paris'},
-  {name:'Carrefour Part-Dieu',enseigne:'Carrefour',lat:45.760,lng:4.860,ville:'Lyon'},
-  {name:'Leclerc Vénissieux',enseigne:'Leclerc',lat:45.696,lng:4.891,ville:'Lyon'},
-  {name:'Lidl Villeurbanne',enseigne:'Lidl',lat:45.773,lng:4.889,ville:'Lyon'},
-  {name:'Intermarché Lyon',enseigne:'Intermarché',lat:45.751,lng:4.855,ville:'Lyon'},
-  {name:'Leclerc Marseille',enseigne:'Leclerc',lat:43.302,lng:5.430,ville:'Marseille'},
-  {name:'Carrefour Bourse',enseigne:'Carrefour',lat:43.296,lng:5.374,ville:'Marseille'},
-  {name:'Lidl Marseille',enseigne:'Lidl',lat:43.254,lng:5.390,ville:'Marseille'},
-];
+// ── ZONES GÉOGRAPHIQUES PAR VILLE ──
+const ZONES = {
+  'Besançon': {
+    'Châteaufarine':   [
+      {name:'Leclerc Châteaufarine',enseigne:'Leclerc',lat:47.231,lng:5.982,drive:true},
+      {name:'Carrefour Châteaufarine',enseigne:'Carrefour',lat:47.229,lng:5.984,drive:true},
+      {name:'Lidl Châteaufarine',enseigne:'Lidl',lat:47.232,lng:5.981,drive:false},
+    ],
+    'Espace Valentin': [
+      {name:'Auchan Espace Valentin',enseigne:'Auchan',lat:47.255,lng:6.040,drive:true},
+      {name:'Intermarché Valentin',enseigne:'Intermarché',lat:47.254,lng:6.038,drive:true},
+      {name:'Aldi Valentin',enseigne:'Aldi',lat:47.256,lng:6.041,drive:false},
+    ],
+    'Centre-Ville':    [
+      {name:'Monoprix Centre',enseigne:'Monoprix',lat:47.237,lng:6.024,drive:false},
+      {name:'Carrefour City Centre',enseigne:'Carrefour',lat:47.238,lng:6.023,drive:false},
+    ],
+    'Planoise':        [
+      {name:'Lidl Planoise',enseigne:'Lidl',lat:47.242,lng:5.990,drive:false},
+      {name:'Intermarché Planoise',enseigne:'Intermarché',lat:47.241,lng:5.991,drive:false},
+    ],
+    'Palente':         [
+      {name:'Super U Palente',enseigne:'Super U',lat:47.248,lng:6.021,drive:true},
+      {name:'Aldi Palente',enseigne:'Aldi',lat:47.249,lng:6.020,drive:false},
+    ],
+  },
+  'Paris': {
+    'Nation / 11e':    [
+      {name:'Leclerc Nation',enseigne:'Leclerc',lat:48.848,lng:2.396,drive:true},
+      {name:'Intermarché 11e',enseigne:'Intermarché',lat:48.857,lng:2.378,drive:false},
+    ],
+    'Opéra / 9e':      [
+      {name:'Carrefour Opéra',enseigne:'Carrefour',lat:48.872,lng:2.333,drive:false},
+      {name:'Monoprix Opéra',enseigne:'Monoprix',lat:48.873,lng:2.334,drive:false},
+    ],
+    'Vincennes':       [
+      {name:'Auchan Vincennes',enseigne:'Auchan',lat:48.847,lng:2.435,drive:true},
+      {name:'Lidl Vincennes',enseigne:'Lidl',lat:48.848,lng:2.433,drive:false},
+    ],
+  },
+  'Lyon': {
+    'Part-Dieu':       [
+      {name:'Carrefour Part-Dieu',enseigne:'Carrefour',lat:45.760,lng:4.860,drive:true},
+      {name:'Monoprix Part-Dieu',enseigne:'Monoprix',lat:45.761,lng:4.861,drive:false},
+    ],
+    'Vénissieux':      [
+      {name:'Leclerc Vénissieux',enseigne:'Leclerc',lat:45.696,lng:4.891,drive:true},
+      {name:'Aldi Vénissieux',enseigne:'Aldi',lat:45.697,lng:4.892,drive:false},
+    ],
+    'Villeurbanne':    [
+      {name:'Lidl Villeurbanne',enseigne:'Lidl',lat:45.773,lng:4.889,drive:false},
+      {name:'Intermarché Villeurbanne',enseigne:'Intermarché',lat:45.774,lng:4.890,drive:false},
+    ],
+  },
+};
+
+// Aplatit toutes les zones en tableau MAGASINS pour compatibilité
+const MAGASINS = Object.values(ZONES).flatMap(v=>Object.values(v).flat()).map(m=>({...m,ville:Object.entries(ZONES).find(([,zones])=>Object.values(zones).flat().includes(m))?.[0]||''}));
+
+// ── FILTRAGE PAR ZONE ──
+let activeZone = null;
+let activeVille = null;
+
+function getMagasinsByZone(ville, zone) {
+  if(!ville || !ZONES[ville]) return MAGASINS;
+  if(!zone) return Object.values(ZONES[ville]).flat();
+  return ZONES[ville][zone] || [];
+}
+
+function getZonesForVille(ville) {
+  return ville && ZONES[ville] ? Object.keys(ZONES[ville]) : [];
+}
+
+function getVilleFromCoords(lat, lng) {
+  // Trouve la ville la plus proche
+  const villeDistances = Object.entries(ZONES).map(([ville, zones]) => {
+    const mags = Object.values(zones).flat();
+    const avgLat = mags.reduce((s,m)=>s+m.lat,0)/mags.length;
+    const avgLng = mags.reduce((s,m)=>s+m.lng,0)/mags.length;
+    return {ville, dist: calcDist(lat,lng,avgLat,avgLng)};
+  }).sort((a,b)=>a.dist-b.dist);
+  return villeDistances[0]?.ville || null;
+}
+
+function getZoneFromCoords(ville, lat, lng) {
+  if(!ville || !ZONES[ville]) return null;
+  let best=null, bestDist=999;
+  Object.entries(ZONES[ville]).forEach(([zone, mags]) => {
+    const avgLat=mags.reduce((s,m)=>s+m.lat,0)/mags.length;
+    const avgLng=mags.reduce((s,m)=>s+m.lng,0)/mags.length;
+    const d=calcDist(lat,lng,avgLat,avgLng);
+    if(d<bestDist){bestDist=d;best=zone;}
+  });
+  return best;
+}
 
 const ENSEIGNE_COLORS={Leclerc:'#003189',Carrefour:'#004A9C',Lidl:'#0050a0',Aldi:'#00519e',Intermarché:'#e30613',Auchan:'#e2231a','Super U':'#e30613',Monoprix:'#333','Grand Frais':'#2e7d32',Autre:'#555'};
 const ENSEIGNE_ABBR={Leclerc:'LEC',Carrefour:'CRF',Lidl:'LDL',Aldi:'ALD',Intermarché:'ITM',Auchan:'AUC','Super U':'SUU',Monoprix:'MNP','Grand Frais':'GF',Autre:'?'};
@@ -761,18 +975,24 @@ function renderList(){
         const isBest=p.prix===best[p.produit],n=getNutri(p.produit);
         const emoji=getProductEmoji(p.produit);
         const prixKg=p.poids?(p.prix/(p.poids/100)/10).toFixed(2):null;
-        return`<div class="card-grid${isBest?' best':''}" onclick="openModal(${JSON.stringify(p).replace(/"/g,'&quot;')})">
-          <div class="card-grid-ph" id="img-grid-${idx}" data-prod="${(p.produit||'').replace(/"/g,'')}">${emoji}</div>
-          <div class="card-grid-body">
-            <div class="card-grid-name">${p.produit}</div>
-            <div class="card-grid-price">${parseFloat(p.prix).toFixed(2)} €</div>
-            ${prixKg?`<div style="font-size:10px;color:var(--text3);">${prixKg} €/100g</div>`:''}
-            <div class="card-grid-meta">
-              ${logoHtml(p.enseigne)}
-              ${isBest?`<span class="badge bbest" style="font-size:9px;padding:2px 5px;">⭐</span>`:''}
-              ${n&&sportMode?`<span style="font-size:9px;color:var(--sport);font-weight:700;">${(n.prot/p.prix).toFixed(1)}g/€</span>`:''}
+        const pData2=JSON.stringify({produit:p.produit,emoji:emoji}).replace(/"/g,'&quot;');
+        return`<div class="card-grid${isBest?' best':''}" style="position:relative;">
+          <div onclick="openModal(${JSON.stringify(p).replace(/"/g,'&quot;')})" style="cursor:pointer;">
+            <div class="card-grid-ph" id="img-grid-${idx}" data-prod="${(p.produit||'').replace(/"/g,'')}">${emoji}</div>
+            <div class="card-grid-body">
+              <div class="card-grid-name">${p.produit}</div>
+              <div class="card-grid-price">${parseFloat(p.prix).toFixed(2)} €</div>
+              ${prixKg?`<div style="font-size:10px;color:var(--text3);">${prixKg} €/100g</div>`:''}
+              <div class="card-grid-meta">
+                ${logoHtml(p.enseigne)}
+                ${isBest?`<span class="badge bbest" style="font-size:9px;padding:2px 5px;">⭐</span>`:''}
+                ${n&&sportMode?`<span style="font-size:9px;color:var(--sport);font-weight:700;">${(n.prot/p.prix).toFixed(1)}g/€</span>`:''}
+              </div>
             </div>
           </div>
+          <button class="prod-add-btn" onclick="event.stopPropagation();flyToCart(event,${pData2})"
+            style="position:absolute;top:6px;right:6px;width:28px;height:28px;background:rgba(0,212,160,.15);color:var(--green);outline:1px solid rgba(0,212,160,.3);font-size:14px;"
+            title="Ajouter au panier">+</button>
         </div>`;
       }).join('')}</div>`;
       // Charge les images en arrière-plan
@@ -792,8 +1012,9 @@ function renderList(){
         const prixKg=p.poids?(p.prix/(p.poids/100)/10).toFixed(2):null;
         const emoji=getProductEmoji(p.produit);
         const trend=p.trend_pct?`<span class="badge ${p.trend_pct>0?'bup':'bdown'}">${p.trend_pct>0?'▲':'▼'}${Math.abs(p.trend_pct).toFixed(1)}%</span>`:'';
-        return`<div class="card${isBest?' best':''}" onclick="openModal(${JSON.stringify(p).replace(/"/g,'&quot;')})">
-          <div class="card-with-photo">
+        const pData=JSON.stringify({produit:p.produit,emoji:emoji}).replace(/"/g,'&quot;');
+        return`<div class="card${isBest?' best':''}" style="position:relative;">
+          <div class="card-with-photo" onclick="openModal(${JSON.stringify(p).replace(/"/g,'&quot;')})" style="cursor:pointer;">
             <div class="card-ph" id="img-list-${idx}" data-prod="${(p.produit||'').replace(/"/g,'')}">${emoji}</div>
             <div class="card-content">
               <div class="card-top"><span class="card-name">${p.produit}</span><span class="card-price">${parseFloat(p.prix).toFixed(2)} €</span></div>
@@ -809,6 +1030,10 @@ function renderList(){
               </div>
             </div>
           </div>
+          <button class="prod-add-btn" id="addbtn-${idx}"
+            onclick="event.stopPropagation();flyToCart(event,${pData})"
+            style="position:absolute;bottom:10px;right:10px;background:rgba(0,212,160,.1);color:var(--green);outline:1px solid rgba(0,212,160,.2);"
+            title="Ajouter au panier">＋</button>
         </div>`;
       }).join('');
       // Charge les images en arrière-plan
@@ -1366,10 +1591,11 @@ function showTab(t){
   document.getElementById('tab-'+t).classList.add('active');
   document.querySelectorAll('.tab')[['liste','carte','duel','panier','carburant','communaute','ajouter'].indexOf(t)].classList.add('active');
   if(t==='liste')renderList();
-  if(t==='carte')initSmartMap(false);
-  if(t==='panier')renderPanier();
+  if(t==='carte'){initSmartMap(false);initZoneFilters();}
+  if(t==='panier'){renderPanier();setPanierTab('presets');initZoneFilters();}
   if(t==='communaute')renderCommunaute();
   if(t==='duel')initDuelSelects();
+  if(t==='carburant')initZoneFilters();
 }
 
 function showToast(msg,type=false){
@@ -1379,7 +1605,401 @@ function showToast(msg,type=false){
   setTimeout(()=>t.className='toast',3500);
 }
 
+// ── PANIER SOUS-ONGLETS ──
+function setPanierTab(t){
+  ['presets','comparateur','detour','scan'].forEach((tab,i)=>{
+    const el=document.getElementById('pTab-'+tab);
+    const btn=document.getElementById('pst'+(i+1));
+    if(el) el.style.display=tab===t?'block':'none';
+    if(btn){
+      btn.style.background=tab===t?'var(--green)':'none';
+      btn.style.color=tab===t?'#001a12':'var(--text3)';
+    }
+  });
+  if(t==='comparateur') renderComparateur();
+  if(t==='scan') loadTesseract();
+}
+
+// ── FILTRE PAR ZONE ──
+function initZoneFilters(){
+  // Détecte la ville depuis position
+  const ville = activeVille || (userLat&&userLng ? getVilleFromCoords(userLat,userLng) : null);
+  if(!ville){return;}
+  activeVille = ville;
+  const zones = getZonesForVille(ville);
+  const row = document.getElementById('zoneFilterRow');
+  if(row){
+    row.innerHTML=`<button class="chip${!activeZone?' active':''}" onclick="setZoneFilter(null)">Toutes zones</button>`+
+      zones.map(z=>`<button class="chip${activeZone===z?' active':''}" onclick="setZoneFilter('${z}')">${z}</button>`).join('');
+  }
+  // Filtre carte
+  const mapRow=document.getElementById('mapZoneRow');
+  if(mapRow){
+    mapRow.innerHTML=`<button class="chip${!activeZone?' active':''}" onclick="filterSmartMapZone(null)">Toutes zones</button>`+
+      zones.map(z=>`<button class="chip${activeZone===z?' active':''}" onclick="filterSmartMapZone('${z}')">${z}</button>`).join('');
+  }
+}
+
+function setZoneFilter(zone){
+  activeZone=zone;
+  initZoneFilters();
+  renderComparateur();
+}
+
+function filterSmartMapZone(zone){
+  activeZone=zone;
+  initZoneFilters();
+  if(smartMapInst) initSmartMap(false);
+}
+
+// ── COMPARATEUR 2 ENSEIGNES ──
+function renderComparateur(){
+  const ensA=document.getElementById('cmpEnsA')?.value;
+  const ensB=document.getElementById('cmpEnsB')?.value;
+  const el=document.getElementById('comparateurResult');
+  if(!el)return;
+  if(!ensA||!ensB){
+    el.innerHTML=`<div class="empty" style="padding:20px;">Sélectionne 2 enseignes pour comparer</div>`;
+    return;
+  }
+  if(ensA===ensB){el.innerHTML=`<div class="empty" style="padding:20px;">Choisis deux enseignes différentes</div>`;return;}
+  if(!panierItems.length){el.innerHTML=`<div class="empty" style="padding:20px;">Ton panier est vide — ajoute des produits d'abord</div>`;return;}
+
+  // Filtre par zone si actif
+  let enseignesMag = activeVille&&activeZone ? getMagasinsByZone(activeVille,activeZone).map(m=>m.enseigne) : null;
+
+  const calcTotal=(ens)=>{
+    let total=0,found=0,rows=[];
+    panierItems.forEach(item=>{
+      const matches=allData.filter(p=>(p.produit||'').toLowerCase().includes(item.toLowerCase())&&p.enseigne===ens&&(!enseignesMag||enseignesMag.includes(p.enseigne)));
+      if(matches.length){
+        const best=matches.reduce((a,b)=>a.prix<b.prix?a:b);
+        total+=best.prix;found++;
+        rows.push({item,produit:best.produit,marque:best.marque,prix:best.prix,found:true});
+      }else rows.push({item,found:false});
+    });
+    return{total:parseFloat(total.toFixed(2)),found,rows,coverage:found/panierItems.length};
+  };
+
+  const rA=calcTotal(ensA),rB=calcTotal(ensB);
+  const winnerIsA=rA.total<=rB.total&&rA.coverage>=rB.coverage || (rA.coverage>rB.coverage);
+  const eco=Math.abs(rA.total-rB.total).toFixed(2);
+
+  el.innerHTML=`
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <div class="cmp-card${winnerIsA?' cmp-winner':' cmp-loser'}">
+        ${logoHtml(ensA)}
+        <div class="cmp-ens-name" style="margin-top:6px;">${ensA}${winnerIsA?' 🏆':''}</div>
+        <div class="cmp-total" style="color:${winnerIsA?'var(--green)':'var(--text)'};">${rA.total.toFixed(2)} €</div>
+        <div style="font-size:11px;color:var(--text2);">${rA.found}/${panierItems.length} produits</div>
+        <div style="margin-top:8px;">
+          ${rA.rows.map(r=>r.found?`<div class="cmp-row"><span>${getProductEmoji(r.produit||'')} ${r.item}</span><span>${r.prix.toFixed(2)} €</span></div>`:`<div class="cmp-row" style="opacity:.4;"><span>${r.item}</span><span>—</span></div>`).join('')}
+        </div>
+      </div>
+      <div class="cmp-card${!winnerIsA?' cmp-winner':' cmp-loser'}">
+        ${logoHtml(ensB)}
+        <div class="cmp-ens-name" style="margin-top:6px;">${ensB}${!winnerIsA?' 🏆':''}</div>
+        <div class="cmp-total" style="color:${!winnerIsA?'var(--green)':'var(--text)'};">${rB.total.toFixed(2)} €</div>
+        <div style="font-size:11px;color:var(--text2);">${rB.found}/${panierItems.length} produits</div>
+        <div style="margin-top:8px;">
+          ${rB.rows.map(r=>r.found?`<div class="cmp-row"><span>${getProductEmoji(r.produit||'')} ${r.item}</span><span>${r.prix.toFixed(2)} €</span></div>`:`<div class="cmp-row" style="opacity:.4;"><span>${r.item}</span><span>—</span></div>`).join('')}
+        </div>
+      </div>
+    </div>
+    ${parseFloat(eco)>0.1?`<div style="background:var(--gbg);border:1px solid var(--gborder);border-radius:var(--rsm);padding:11px;text-align:center;margin-bottom:10px;">
+      <div style="font-size:14px;font-weight:800;color:var(--green);">💰 ${winnerIsA?ensA:ensB} est moins cher de <strong>${eco} €</strong></div>
+      <div style="font-size:11px;color:var(--text2);margin-top:3px;">Sur l'ensemble de ton panier${activeZone?' dans la zone '+activeZone:''}</div>
+    </div>`:''}
+    <button onclick="copyComparateurDrive('${winnerIsA?ensA:ensB}')" class="btn btn-outline" style="margin-bottom:6px;">📋 Copier liste Drive ${winnerIsA?ensA:ensB}</button>`;
+}
+
+function copyComparateurDrive(ens){
+  const ensA=document.getElementById('cmpEnsA')?.value;
+  const ensB=document.getElementById('cmpEnsB')?.value;
+  const calcTotal=(e)=>{
+    let rows=[];
+    panierItems.forEach(item=>{
+      const matches=allData.filter(p=>(p.produit||'').toLowerCase().includes(item.toLowerCase())&&p.enseigne===e);
+      if(matches.length){const best=matches.reduce((a,b)=>a.prix<b.prix?a:b);rows.push({...best,qty:1});}
+    });
+    return rows;
+  };
+  const rows=calcTotal(ens);
+  const txt=rows.map((r,i)=>`${i+1}. ${r.produit}${r.marque?' ('+r.marque+')':''} → ${r.prix.toFixed(2)} €`).join('
+');
+  navigator.clipboard.writeText(txt).then(()=>showToast('Liste copiée 📋')).catch(()=>showToast('Copie OK',true));
+}
+
+// ── CALCUL DÉTOUR PANIER ──
+function calcDetour(){
+  const panierProche=parseFloat(document.getElementById('dtPanierProche').value);
+  const panierLoin=parseFloat(document.getElementById('dtPanierLoin').value);
+  const dist=parseFloat(document.getElementById('dtDist').value);
+  const coutKm=parseFloat(document.getElementById('dtCoutKm').value)||0.40;
+  const nomMag=document.getElementById('dtNomMag').value.trim();
+
+  if([panierProche,panierLoin,dist].some(isNaN)||panierProche<=0||panierLoin<=0||dist<=0){
+    showToast('Remplis tous les champs !',true);return;
+  }
+  const coutTrajet=parseFloat((dist*coutKm).toFixed(2));
+  const economieBrute=parseFloat((panierProche-panierLoin).toFixed(2));
+  const gainsNet=parseFloat((economieBrute-coutTrajet).toFixed(2));
+  const seuilKm=economieBrute>0?(economieBrute/coutKm).toFixed(1):'—';
+
+  let cls,verdict,color;
+  if(gainsNet>2){cls='detour-good';verdict='✅ Ça vaut le détour !';color='var(--green)';}
+  else if(gainsNet>0){cls='detour-neutral';verdict='⚠️ Tout juste rentable';color='var(--amber)';}
+  else{cls='detour-bad';verdict='❌ Pas rentable';color='var(--red)';}
+
+  document.getElementById('detourResult').innerHTML=`
+    <div class="${cls}">
+      <div class="detour-verdict" style="color:${color};">${verdict}</div>
+      <div class="detour-detail">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+          <div style="background:var(--bg3);border-radius:var(--rsm);padding:10px;text-align:center;">
+            <div style="font-size:10px;color:var(--text3);">Économie brute</div>
+            <div style="font-size:20px;font-weight:800;color:var(--text);">${economieBrute>0?'+':''} ${economieBrute.toFixed(2)} €</div>
+          </div>
+          <div style="background:var(--bg3);border-radius:var(--rsm);padding:10px;text-align:center;">
+            <div style="font-size:10px;color:var(--text3);">Coût trajet</div>
+            <div style="font-size:20px;font-weight:800;color:var(--red);">- ${coutTrajet.toFixed(2)} €</div>
+          </div>
+        </div>
+        <div style="background:var(--bg3);border-radius:var(--rsm);padding:12px;text-align:center;margin-bottom:10px;">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">🎯 Gain net réel</div>
+          <div style="font-size:28px;font-weight:800;color:${color};font-variant-numeric:tabular-nums;">${gainsNet>0?'+':''}${gainsNet.toFixed(2)} €</div>
+        </div>
+        ${nomMag?`<div style="font-size:12px;color:var(--text2);">Magasin visé : <strong style="color:var(--text);">${nomMag}</strong></div>`:''}
+        <div style="font-size:12px;color:var(--text2);margin-top:6px;">
+          Distance A/R : <strong>${dist} km</strong> · Coût/km : <strong>${coutKm.toFixed(2)} €</strong><br>
+          ${gainsNet<=0?`Il faudrait que le détour fasse moins de <strong style="color:var(--green);">${seuilKm} km A/R</strong> pour être rentable.`:`Distance max rentable : <strong style="color:var(--green);">${seuilKm} km A/R</strong>`}
+        </div>
+      </div>
+    </div>`;
+}
+
+// ── SCAN TICKET OCR ──
+let tesseractLoaded = false;
+
+function loadTesseract(){
+  if(tesseractLoaded) return;
+  const s=document.createElement('script');
+  s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+  s.onload=()=>{tesseractLoaded=true;console.log('Tesseract loaded');};
+  document.head.appendChild(s);
+}
+
+async function scanTicket(event){
+  const file=event.target.files[0];
+  if(!file) return;
+
+  // Préview
+  const preview=document.getElementById('scanPreview');
+  const img=document.getElementById('scanImg');
+  const reader=new FileReader();
+  reader.onload=e=>{img.src=e.target.result;preview.style.display='block';};
+  reader.readAsDataURL(file);
+
+  document.getElementById('scanLoader').style.display='block';
+  document.getElementById('scanResult').innerHTML='';
+
+  // Charge Tesseract si pas encore fait
+  if(!tesseractLoaded){
+    await new Promise(resolve=>{
+      const s=document.createElement('script');
+      s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+      s.onload=()=>{tesseractLoaded=true;resolve();};
+      document.head.appendChild(s);
+    });
+  }
+
+  try{
+    const result=await Tesseract.recognize(file,'fra',{logger:m=>{
+      if(m.status==='recognizing text'){
+        document.getElementById('scanLoader').innerHTML=`<div style="text-align:center;padding:20px;"><div class="spin"></div><br>Analyse : ${Math.round(m.progress*100)}%</div>`;
+      }
+    }});
+    document.getElementById('scanLoader').style.display='none';
+    const text=result.data.text;
+    const items=parseTicket(text);
+    renderScanResult(items, text);
+  }catch(err){
+    document.getElementById('scanLoader').style.display='none';
+    document.getElementById('scanResult').innerHTML=`<div class="empty">Erreur OCR : ${err.message}<br><br>Assure-toi que l'image est nette et bien éclairée.</div>`;
+  }
+}
+
+function parseTicket(rawText){
+  const lines=rawText.split('
+').map(l=>l.trim()).filter(l=>l.length>2);
+  const items=[];
+  const priceRegex=/(\d+[.,]\d{2})\s*[€E]?\s*$/;
+  const skipWords=['total','ttc','tva','carte','merci','ticket','date','heure','caisse','avoir','rendu','especes','cb','visa','master'];
+
+  lines.forEach(line=>{
+    const lower=line.toLowerCase();
+    if(skipWords.some(w=>lower.includes(w))) return;
+    const priceMatch=line.match(priceRegex);
+    if(priceMatch){
+      const prix=parseFloat(priceMatch[1].replace(',','.'));
+      if(prix>0&&prix<500){
+        // Nettoie le nom du produit
+        let nom=line.replace(priceRegex,'').trim();
+        nom=nom.replace(/^\d+\s+/,'').replace(/\s+\d+\s*$/,'').trim();
+        if(nom.length>2&&nom.length<60){
+          items.push({nom:nom.toUpperCase(),prix,selected:true});
+        }
+      }
+    }
+  });
+  return items;
+}
+
+function renderScanResult(items, rawText){
+  if(!items.length){
+    document.getElementById('scanResult').innerHTML=`<div style="margin-bottom:10px;">
+      <div class="empty" style="padding:16px;">Aucun produit détecté automatiquement.<br>L'image est-elle nette et bien éclairée ?</div>
+      <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--rsm);padding:10px;font-size:10px;color:var(--text3);font-family:monospace;max-height:120px;overflow-y:auto;">${rawText.replace(/</g,'&lt;')}</div>
+    </div>`;
+    return;
+  }
+
+  window._scanItems=items;
+  document.getElementById('scanResult').innerHTML=`
+    <div style="font-size:11px;font-weight:800;color:var(--green);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">
+      ✅ ${items.length} produit${items.length>1?'s':''} détecté${items.length>1?'s':''}
+    </div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:10px;">Coche les produits à importer, corrige les noms si besoin :</div>
+    <div id="scanItemsList">
+      ${items.map((item,i)=>`
+        <div class="scan-item">
+          <input type="checkbox" id="sc${i}" ${item.selected?'checked':''} style="width:18px;height:18px;accent-color:var(--green);flex-shrink:0;" onchange="window._scanItems[${i}].selected=this.checked">
+          <div style="flex:1;min-width:0;">
+            <input type="text" value="${item.nom}" onchange="window._scanItems[${i}].nom=this.value" style="font-size:12px;padding:5px 8px;margin-bottom:3px;">
+            <div style="font-size:11px;color:var(--text3);">Prix détecté : ${item.prix.toFixed(2)} €</div>
+          </div>
+          <div style="font-size:13px;font-weight:800;color:var(--green);flex-shrink:0;">${item.prix.toFixed(2)} €</div>
+        </div>`).join('')}
+    </div>
+    <div class="fr" style="margin-top:12px;">
+      <div class="fg" style="margin-bottom:0;">
+        <label>Enseigne *</label>
+        <select id="scanEnseigne">
+          <option value="">Choisir...</option>
+          <option>Leclerc</option><option>Carrefour</option><option>Lidl</option><option>Aldi</option><option>Intermarché</option><option>Auchan</option><option>Autre</option>
+        </select>
+      </div>
+      <div class="fg" style="margin-bottom:0;">
+        <label>Ville</label>
+        <input type="text" id="scanVille" placeholder="Besançon...">
+      </div>
+    </div>
+    <button class="btn btn-g" onclick="importScanToSupabase()" style="margin-top:10px;">⬆️ Importer vers Supabase</button>
+    <button class="btn btn-outline" onclick="importScanToPanier()" style="margin-top:6px;">🧺 Ajouter au panier</button>`;
+}
+
+async function importScanToSupabase(){
+  const enseigne=document.getElementById('scanEnseigne')?.value;
+  const ville=document.getElementById('scanVille')?.value||'';
+  if(!enseigne){showToast('Choisis une enseigne !',true);return;}
+  const items=window._scanItems?.filter(i=>i.selected)??[];
+  if(!items.length){showToast('Sélectionne au moins un produit',true);return;}
+  if(!pseudo){showToast('Crée ton pseudo d'abord !',true);return;}
+
+  // Transforme en JSON Supabase
+  const records=items.map(item=>({
+    produit: item.nom.charAt(0)+item.nom.slice(1).toLowerCase(),
+    marque: '',
+    typeMarque: 'mdd',
+    prix: item.prix,
+    enseigne, ville,
+    drive: false,
+    contributeur: pseudo,
+    source: 'scan-ticket',
+  }));
+
+  try{
+    const res=await db.from('prix').insert(records);
+    if(res.error)throw res.error;
+    myXP+=records.length*5;myContribs+=records.length;
+    localStorage.setItem('af_xp',myXP);localStorage.setItem('af_contribs',myContribs);
+    try{await db.from('contributeurs').upsert({pseudo,points:myXP},{onConflict:'pseudo'});}catch(e){}
+    showPseudoHdr();
+    showToast(`✅ ${records.length} prix importés ! +${records.length*5} XP`,'pts');
+    fireConfetti();
+    await fetchData();
+  }catch(e){
+    showToast('Erreur Supabase : '+e.message,true);
+    console.error('Scan import error:',e,'
+JSON preview:',JSON.stringify(records,null,2));
+  }
+}
+
+function importScanToPanier(){
+  const items=window._scanItems?.filter(i=>i.selected)??[];
+  items.forEach(item=>{
+    const nom=item.nom.charAt(0)+item.nom.slice(1).toLowerCase();
+    if(!panierItems.includes(nom)) panierItems.push(nom);
+  });
+  savePanier();
+  updateCartBadge();
+  showToast(`🧺 ${items.length} produit${items.length>1?'s':''} ajouté${items.length>1?'s':''} au panier !`);
+  setPanierTab('presets');
+}
+
+// ── ANIMATIONS PANIER ──
+function flyToCart(e, produit){
+  e.preventDefault();
+  const btn = e.currentTarget;
+  btn.classList.add('add-pop');
+  setTimeout(()=>btn.classList.remove('add-pop'),250);
+
+  const btnRect = btn.getBoundingClientRect();
+  const cartBtn = document.getElementById('cartHeaderBtn');
+  const cartRect = cartBtn ? cartBtn.getBoundingClientRect() : {left:window.innerWidth-50,top:10};
+
+  const startX = btnRect.left + btnRect.width/2 - 13;
+  const startY = btnRect.top + btnRect.height/2 - 13;
+  const dx = (cartRect.left + cartRect.width/2) - startX;
+  const dy = (cartRect.top + cartRect.height/2) - startY;
+
+  // Crée le emoji volant
+  const fly = document.createElement('div');
+  fly.className = 'fly-emoji';
+  fly.textContent = produit.emoji || getProductEmoji(produit.produit||'');
+  fly.style.left = startX + 'px';
+  fly.style.top = startY + 'px';
+  fly.style.setProperty('--dx', dx);
+  fly.style.setProperty('--dy', dy);
+  document.body.appendChild(fly);
+  fly.addEventListener('animationend', () => fly.remove());
+
+  // Ajoute au panier après 580ms
+  setTimeout(() => {
+    const v = produit.produit || produit.name;
+    if(v && !panierItems.includes(v)){
+      panierItems.push(v);
+      savePanier();
+    }
+    updateCartBadge();
+    // Rebond sur le bouton cart
+    const cb = document.getElementById('cartHeaderBtn');
+    if(cb){ cb.classList.remove('cart-bounce'); void cb.offsetWidth; cb.classList.add('cart-bounce'); setTimeout(()=>cb.classList.remove('cart-bounce'),400); }
+    showToast(`${produit.emoji||'🛒'} Ajouté au panier !`);
+  }, 580);
+}
+
+function updateCartBadge(){
+  const badge = document.getElementById('cartBadge');
+  if(!badge) return;
+  const n = panierItems.length;
+  if(n > 0){ badge.style.display='flex'; badge.textContent=n; }
+  else { badge.style.display='none'; }
+}
+
 init();
+// Mise à jour du badge au chargement
+setTimeout(updateCartBadge, 500);
 </script>
 </body>
 </html>
