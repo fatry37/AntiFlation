@@ -869,15 +869,7 @@ function barcodeToUrl(barcode){
 
 async function getProductImage(produit){
   if(imgCache[produit]!==undefined) return imgCache[produit];
-  // Cherche le barcode exact d'abord
-  for(const[k,v] of Object.entries(PRODUCT_BARCODES)){
-    if((produit||'').startsWith(k)){
-      const url=barcodeToUrl(v);
-      imgCache[produit]=url;
-      return url;
-    }
-  }
-  // Sinon cherche via l'API Open Food Facts
+  // Cherche le barcode exact d'abord\n  for(const[k,v] of Object.entries(PRODUCT_BARCODES)){\n    if((produit||'').startsWith(k)){\n      const url=barcodeToUrl(v);\n      imgCache[produit]=url;\n      return url;\n    }\n  }\n  // Sinon cherche via l'API Open Food Facts
   try{
     const query=encodeURIComponent((produit||'').split(' ').slice(0,3).join(' '));
     const r=await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${query}&search_simple=1&action=process&json=1&page_size=1&lc=fr&cc=fr`,{signal:AbortSignal.timeout(3000)});
@@ -1077,7 +1069,8 @@ function openModal(p){
     <div class="chart-wrap"><canvas id="modalChart"></canvas></div>
     <div style="display:flex;gap:8px;margin-top:12px;">
       <button class="btn btn-g" onclick="closeModal()" style="flex:1;">Fermer</button>
-      <button class="btn btn-outline btn-sm" onclick="addToPanier('${p.produit.replace(/'/g,"\\'")}')" style="flex:1;">🧺 Panier</button>
+      <button class="btn btn-outline btn-sm" onclick="addToPanierFromModal()" style="flex:1;">🧺 Panier</button>
+
     </div>`;
   document.getElementById('modalOverlay').classList.remove('hidden');
   setTimeout(()=>{
@@ -1089,6 +1082,7 @@ function openModal(p){
 }
 
 function closeModal(e){if(!e||e.target===document.getElementById('modalOverlay'))document.getElementById('modalOverlay').classList.add('hidden');}
+function addToPanierFromModal(){
 function addToPanier(prod){if(!panierItems.includes(prod)){panierItems.push(prod);savePanier();}closeModal();showToast('Ajouté au panier 🧺');}
 
 // ── CARTE SMART ──
@@ -1319,8 +1313,8 @@ function calcPanier(){
   // Liste Drive avec noms exacts
   const best=results[0];
   const driveText=best.rows.map((row,i)=>{
-    if(!row.found) return`${i+1}. ${row.item} → ❌ Non trouvé`;
-    return`${i+1}. ${row.produit}${row.marque?' ('+row.marque+')':''} → ${parseFloat(row.prix).toFixed(2)} €${row.drive?' [Drive]':''}`;
+    if(!row.found) return`${i+1}. ${row.item} - ❌ Non trouvé`;
+    return`${i+1}. ${row.produit}${row.marque?' ('+row.marque+')':''} - ${parseFloat(row.prix).toFixed(2)} €${row.drive?' [Drive]':''}`;
   }).join('\n');
 
   document.getElementById('driveList').innerHTML=`<div class="drive-list-box">
@@ -1379,28 +1373,8 @@ async function fetchFuel(lat,lng){
     allResults=generateFallbackStations(lat,lng,ft);
   }
 
-  // Extraction coordonnées — l'API peut retourner geom, geo_point_2d ou latitude/longitude
-  const stations=allResults.map(s=>{
-    let sLat=null,sLng=null;
-    if(s.geom?.lat&&s.geom?.lon){sLat=s.geom.lat;sLng=s.geom.lon;}
-    else if(s.geo_point_2d?.lat&&s.geo_point_2d?.lon){sLat=s.geo_point_2d.lat;sLng=s.geo_point_2d.lon;}
-    else if(s.latitude&&s.longitude){sLat=parseFloat(s.latitude)/100000;sLng=parseFloat(s.longitude)/100000;}
-    else if(s.geolocation?.lat){sLat=s.geolocation.lat;sLng=s.geolocation.lon;}
-
-    const rawPrice=s[pmap[ft]]||s[pmap[ft].replace('_prix','')]||null;
-    const price=rawPrice?parseFloat(rawPrice):null;
-    const dist=sLat?calcDist(lat,lng,sLat,sLng):null;
-    const distHome=homeLocation&&sLat?calcDist(homeLocation.lat,homeLocation.lng,sLat,sLng):null;
-    const maj=s[ptoupdmap[ft]]?new Date(s[ptoupdmap[ft]]).toLocaleDateString('fr-FR',{day:'numeric',month:'short'}):null;
-    return{...s,sLat,sLng,price,dist,distHome,maj,nom:s.nom||s.Nom||s.name||'Station service',adresse:s.adresse||s.Adresse||s.address||'',ville:s.ville||s.Ville||s.city||''};
-  }).filter(s=>s.price!==null&&s.price>0.5&&s.sLat).sort((a,b)=>a.price-b.price);
-
-  if(!stations.length){
-    document.getElementById('fuelResults').innerHTML=`<div class="empty" style="padding:20px;">
-      <div style="font-size:32px;margin-bottom:10px;">⛽</div>
-      <strong style="color:var(--text);">Aucune station trouvée</strong><br><br>
-      L'API gouvernementale ne retourne pas de données pour ${ft} dans cette zone.<br><br>
-      <a href="https://www.prix-carburants.gouv.fr" target="_blank" style="color:var(--green);">→ Voir prix-carburants.gouv.fr</a>
+  // Extraction coordonnées — l'API peut retourner geom, geo_point_2d ou latitude/longitude\n  const stations=allResults.map(s=>{\n    let sLat=null,sLng=null;\n    if(s.geom?.lat&&s.geom?.lon){sLat=s.geom.lat;sLng=s.geom.lon;}\n    else if(s.geo_point_2d?.lat&&s.geo_point_2d?.lon){sLat=s.geo_point_2d.lat;sLng=s.geo_point_2d.lon;}\n    else if(s.latitude&&s.longitude){sLat=parseFloat(s.latitude)/100000;sLng=parseFloat(s.longitude)/100000;}\n    else if(s.geolocation?.lat){sLat=s.geolocation.lat;sLng=s.geolocation.lon;}\n\n    const rawPrice=s[pmap[ft]]||s[pmap[ft].replace('_prix','')]||null;\n    const price=rawPrice?parseFloat(rawPrice):null;\n    const dist=sLat?calcDist(lat,lng,sLat,sLng):null;\n    const distHome=homeLocation&&sLat?calcDist(homeLocation.lat,homeLocation.lng,sLat,sLng):null;\n    const maj=s[ptoupdmap[ft]]?new Date(s[ptoupdmap[ft]]).toLocaleDateString('fr-FR',{day:'numeric',month:'short'}):null;\n    return{...s,sLat,sLng,price,dist,distHome,maj,nom:s.nom||s.Nom||s.name||'Station service',adresse:s.adresse||s.Adresse||s.address||'',ville:s.ville||s.Ville||s.city||''};\n  }).filter(s=>s.price!==null&&s.price>0.5&&s.sLat).sort((a,b)=>a.price-b.price);\n\n  if(!stations.length){\n    document.getElementById('fuelResults').innerHTML=`<div class="empty" style="padding:20px;">\n      <div style="font-size:32px;margin-bottom:10px;">⛽</div>\n      <strong style="color:var(--text);">Aucune station trouvée</strong><br><br>\n      L'API gouvernementale ne retourne pas de données pour ${ft} dans cette zone.<br><br>
+      <a href="https://www.prix-carburants.gouv.fr" target="_blank" style="color:var(--green);">Voir prix-carburants.gouv.fr</a>
     </div>`;
     return;
   }
@@ -1487,78 +1461,7 @@ async function fetchFuel(lat,lng){
     }).join('');
 }
 
-// Stations de fallback si l'API ne répond pas
-function generateFallbackStations(lat,lng,ft){
-  const basePrice={'Gazole':1.78,'SP95':1.82,'SP98':1.95,'E10':1.79,'E85':0.89,'GPLc':0.99};
-  const base=basePrice[ft]||1.80;
-  const names=['TotalEnergies','BP','Shell','Intermarché','Leclerc','Carrefour','Auchan','Système U'];
-  return Array.from({length:8},(_,i)=>({
-    nom:names[i]||'Station service',
-    adresse:`Route principale`,ville:'Votre ville',cp:'',
-    [{'Gazole':'gazole_prix','SP95':'sp95_prix','SP98':'sp98_prix','E10':'e10_prix','E85':'e85_prix','GPLc':'gplc_prix'}[ft]]: (base+(i*0.02-0.07+Math.random()*0.05)).toFixed(3),
-    geo_point_2d:{lat:lat+(Math.random()-0.5)*0.05,lon:lng+(Math.random()-0.5)*0.05}
-  }));
-}
-
-function calcRent(){
-  const p1=parseFloat(document.getElementById('rP1').value),p2=parseFloat(document.getElementById('rP2').value),d=parseFloat(document.getElementById('rD').value),c=parseFloat(document.getElementById('rC').value),v=parseFloat(document.getElementById('rV').value);
-  if([p1,p2,d,c,v].some(isNaN)){showToast('Remplis tous les champs',true);return;}
-  const eco=(p1-p2)*v,cout=(d/100)*c*p2,net=eco-cout,seuil=cout/(p1-p2);
-  let h,cls;
-  if(net>2){cls='good';h=`<div class="rent-verdict" style="color:var(--green);">✅ Rentable !</div><div class="rent-detail">Économie nette : <strong style="color:var(--green);">${net.toFixed(2)} €</strong><br>Brute ${eco.toFixed(2)} € — Trajet ${cout.toFixed(2)} €<br>Seuil : ${seuil.toFixed(0)} L min.</div>`;}
-  else if(net>0){cls='neutral';h=`<div class="rent-verdict" style="color:var(--amber);">⚠️ Limite</div><div class="rent-detail">${net.toFixed(2)} € net seulement.</div>`;}
-  else{cls='bad';h=`<div class="rent-verdict" style="color:var(--red);">❌ Pas rentable</div><div class="rent-detail">Trajet coûte ${Math.abs(net).toFixed(2)} € de plus.<br>Seuil : ${seuil.toFixed(0)} L.</div>`;}
-  document.getElementById('rentResult').innerHTML=`<div class="rent-res ${cls}">${h}</div>`;
-}
-
-// ── COMMUNAUTÉ ──
-async function renderCommunaute(){
-  const el=document.getElementById('communauteContent');
-  if(!pseudo){
-    el.innerHTML=`<div class="sec-title">🏆 Communauté AntiFlation</div>
-      <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:16px;text-align:center;margin-bottom:12px;">
-        <div style="font-size:36px;margin-bottom:10px;">👤</div>
-        <div style="font-size:13px;color:var(--text2);margin-bottom:12px;">Crée ton pseudo pour gagner des XP !</div>
-        <div class="fg"><input type="text" id="pseudoCommu" placeholder="Ton pseudo..." maxlength="20"></div>
-        <button class="btn btn-g" onclick="savePseudoCommu()">Choisir</button>
-      </div><div id="lbSection"></div>`;
-  }else{
-    const myBadges=BADGES_DEF.filter(b=>myContribs>=b.seuil);
-    const nextB=BADGES_DEF.find(b=>myContribs<b.seuil);
-    const xpPct=Math.min(100,nextB?(myXP/nextB.xp*100):100);
-    el.innerHTML=`<div class="sec-title">🏆 Mon profil</div>
-      <div class="profile-card">
-        <div class="profile-avatar">${myBadges.length?myBadges[myBadges.length-1].icon:'🌱'}</div>
-        <div class="profile-pseudo">${pseudo}</div>
-        <div class="profile-pts">${myXP} XP</div>
-        <div style="font-size:11px;color:var(--text2);">${myContribs} contribution${myContribs>1?'s':''}</div>
-        <div class="xp-bar-wrap"><div class="xp-bar" style="width:${xpPct}%;"></div></div>
-        <div style="font-size:11px;color:var(--text2);margin-top:3px;">${nextB?`Prochain : ${nextB.icon} ${nextB.name} (${nextB.seuil-myContribs} restants)`:' 🎉 Tous les badges !'}</div>
-      </div>
-      <div class="sec-title">Badges</div>
-      <div class="badge-grid">${BADGES_DEF.map(b=>{const e=myContribs>=b.seuil;return`<div class="badge-card${e?' earned':' locked'}"><div class="badge-icon">${b.icon}</div><div class="badge-name">${b.name}</div><div style="font-size:9px;color:var(--text2);">${b.desc}</div><div style="font-size:10px;color:var(--green);font-weight:700;">+${b.xp} XP</div></div>`;}).join('')}</div>
-      <div id="lbSection"></div>`;
-  }
-  const lbEl=document.getElementById('lbSection');
-  if(!lbEl)return;
-  lbEl.innerHTML=`<div class="sec-title">🌍 Classement</div><div class="loading"><div class="spin"></div></div>`;
-  try{
-    const res=await db.from('contributeurs').select('*').order('points',{ascending:false}).limit(10);
-    if(res.error||!res.data?.length){lbEl.innerHTML=`<div class="sec-title">🌍 Classement</div><div class="empty" style="padding:12px;">Sois le premier !</div>`;return;}
-    const medals=['🥇','🥈','🥉'];
-    lbEl.innerHTML=`<div class="sec-title">🌍 Classement</div>`+res.data.map((c,i)=>{const ub=BADGES_DEF.filter(b=>c.points>=b.xp);const ic=ub.length?ub[ub.length-1].icon:'🌱';return`<div class="lb-row${c.pseudo===pseudo?' best':''}"><span class="lb-rank">${medals[i]||i+1}</span><span>${ic}</span><span class="lb-pseudo">${c.pseudo}${c.pseudo===pseudo?' (moi)':''}</span><span class="lb-pts">${c.points} XP</span></div>`;}).join('');
-  }catch(e){lbEl.innerHTML=`<div class="sec-title">🌍 Classement</div><div class="empty" style="padding:12px;">Indisponible.</div>`;}
-}
-
-function savePseudo(){const v=document.getElementById('pseudoInput')?.value?.trim();if(!v||v.length<2){showToast('Pseudo trop court',true);return;}pseudo=v;localStorage.setItem('af_pseudo',pseudo);document.getElementById('pseudoSetup').style.display='none';showPseudoHdr();showToast('✅ Pseudo : '+pseudo);}
-function savePseudoCommu(){const v=document.getElementById('pseudoCommu')?.value?.trim();if(!v||v.length<2){showToast('Pseudo trop court',true);return;}pseudo=v;localStorage.setItem('af_pseudo',pseudo);showPseudoHdr();renderCommunaute();showToast('🎉 Bienvenue '+pseudo+' !');fireConfetti();}
-function showPseudoHdr(){const el=document.getElementById('hdrPseudo');el.style.display='inline';el.textContent=`👤 ${pseudo} · ${myXP} XP`;}
-
-function showProdSugg(){
-  const q=document.getElementById('fProduit').value.toLowerCase().trim();
-  if(q.length<2){document.getElementById('prodSugg').innerHTML='';return;}
-  const sugg=[...new Set(allData.map(p=>p.produit))].filter(p=>p.toLowerCase().includes(q)).slice(0,4);
-  document.getElementById('prodSugg').innerHTML=sugg.map(s=>`<button onclick="document.getElementById('fProduit').value='${s.replace(/'/g,"\\'")}';document.getElementById('prodSugg').innerHTML='';" style="display:inline-block;padding:4px 10px;border-radius:20px;font-size:11px;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);cursor:pointer;margin:0 4px 4px 0;">${s}</button>`).join('');
+// Stations de fallback si l'API ne répond pas\nfunction generateFallbackStations(lat,lng,ft){\n  const basePrice={'Gazole':1.78,'SP95':1.82,'SP98':1.95,'E10':1.79,'E85':0.89,'GPLc':0.99};\n  const base=basePrice[ft]||1.80;\n  const names=['TotalEnergies','BP','Shell','Intermarché','Leclerc','Carrefour','Auchan','Système U'];\n  return Array.from({length:8},(_,i)=>({\n    nom:names[i]||'Station service',\n    adresse:`Route principale`,ville:'Votre ville',cp:'',\n    [{'Gazole':'gazole_prix','SP95':'sp95_prix','SP98':'sp98_prix','E10':'e10_prix','E85':'e85_prix','GPLc':'gplc_prix'}[ft]]: (base+(i*0.02-0.07+Math.random()*0.05)).toFixed(3),\n    geo_point_2d:{lat:lat+(Math.random()-0.5)*0.05,lon:lng+(Math.random()-0.5)*0.05}\n  }));\n}\n\nfunction calcRent(){\n  const p1=parseFloat(document.getElementById('rP1').value),p2=parseFloat(document.getElementById('rP2').value),d=parseFloat(document.getElementById('rD').value),c=parseFloat(document.getElementById('rC').value),v=parseFloat(document.getElementById('rV').value);\n  if([p1,p2,d,c,v].some(isNaN)){showToast('Remplis tous les champs',true);return;}\n  const eco=(p1-p2)*v,cout=(d/100)*c*p2,net=eco-cout,seuil=cout/(p1-p2);\n  let h,cls;\n  if(net>2){cls='good';h=`<div class="rent-verdict" style="color:var(--green);">✅ Rentable !</div><div class="rent-detail">Économie nette : <strong style="color:var(--green);">${net.toFixed(2)} €</strong><br>Brute ${eco.toFixed(2)} € — Trajet ${cout.toFixed(2)} €<br>Seuil : ${seuil.toFixed(0)} L min.</div>`;}\n  else if(net>0){cls='neutral';h=`<div class="rent-verdict" style="color:var(--amber);">⚠️ Limite</div><div class="rent-detail">${net.toFixed(2)} € net seulement.</div>`;}\n  else{cls='bad';h=`<div class="rent-verdict" style="color:var(--red);">❌ Pas rentable</div><div class="rent-detail">Trajet coûte ${Math.abs(net).toFixed(2)} € de plus.<br>Seuil : ${seuil.toFixed(0)} L.</div>`;}\n  document.getElementById('rentResult').innerHTML=`<div class="rent-res ${cls}">${h}</div>`;\n}\n\n// ── COMMUNAUTÉ ──\nasync function renderCommunaute(){\n  const el=document.getElementById('communauteContent');\n  if(!pseudo){\n    el.innerHTML=`<div class="sec-title">🏆 Communauté AntiFlation</div>\n      <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:16px;text-align:center;margin-bottom:12px;">\n        <div style="font-size:36px;margin-bottom:10px;">👤</div>\n        <div style="font-size:13px;color:var(--text2);margin-bottom:12px;">Crée ton pseudo pour gagner des XP !</div>\n        <div class="fg"><input type="text" id="pseudoCommu" placeholder="Ton pseudo..." maxlength="20"></div>\n        <button class="btn btn-g" onclick="savePseudoCommu()">Choisir</button>\n      </div><div id="lbSection"></div>`;\n  }else{\n    const myBadges=BADGES_DEF.filter(b=>myContribs>=b.seuil);\n    const nextB=BADGES_DEF.find(b=>myContribs<b.seuil);\n    const xpPct=Math.min(100,nextB?(myXP/nextB.xp*100):100);\n    el.innerHTML=`<div class="sec-title">🏆 Mon profil</div>\n      <div class="profile-card">\n        <div class="profile-avatar">${myBadges.length?myBadges[myBadges.length-1].icon:'🌱'}</div>\n        <div class="profile-pseudo">${pseudo}</div>\n        <div class="profile-pts">${myXP} XP</div>\n        <div style="font-size:11px;color:var(--text2);">${myContribs} contribution${myContribs>1?'s':''}</div>\n        <div class="xp-bar-wrap"><div class="xp-bar" style="width:${xpPct}%;"></div></div>\n        <div style="font-size:11px;color:var(--text2);margin-top:3px;">${nextB?`Prochain : ${nextB.icon} ${nextB.name} (${nextB.seuil-myContribs} restants)`:' 🎉 Tous les badges !'}</div>\n      </div>\n      <div class="sec-title">Badges</div>\n      <div class="badge-grid">${BADGES_DEF.map(b=>{const e=myContribs>=b.seuil;return`<div class="badge-card${e?' earned':' locked'}"><div class="badge-icon">${b.icon}</div><div class="badge-name">${b.name}</div><div style="font-size:9px;color:var(--text2);">${b.desc}</div><div style="font-size:10px;color:var(--green);font-weight:700;">+${b.xp} XP</div></div>`;}).join('')}</div>\n      <div id="lbSection"></div>`;\n  }\n  const lbEl=document.getElementById('lbSection');\n  if(!lbEl)return;\n  lbEl.innerHTML=`<div class="sec-title">🌍 Classement</div><div class="loading"><div class="spin"></div></div>`;\n  try{\n    const res=await db.from('contributeurs').select('*').order('points',{ascending:false}).limit(10);\n    if(res.error||!res.data?.length){lbEl.innerHTML=`<div class="sec-title">🌍 Classement</div><div class="empty" style="padding:12px;">Sois le premier !</div>`;return;}\n    const medals=['🥇','🥈','🥉'];\n    lbEl.innerHTML=`<div class="sec-title">🌍 Classement</div>`+res.data.map((c,i)=>{const ub=BADGES_DEF.filter(b=>c.points>=b.xp);const ic=ub.length?ub[ub.length-1].icon:'🌱';return`<div class="lb-row${c.pseudo===pseudo?' best':''}"><span class="lb-rank">${medals[i]||i+1}</span><span>${ic}</span><span class="lb-pseudo">${c.pseudo}${c.pseudo===pseudo?' (moi)':''}</span><span class="lb-pts">${c.points} XP</span></div>`;}).join('');\n  }catch(e){lbEl.innerHTML=`<div class="sec-title">🌍 Classement</div><div class="empty" style="padding:12px;">Indisponible.</div>`;}\n}\n\nfunction savePseudo(){const v=document.getElementById('pseudoInput')?.value?.trim();if(!v||v.length<2){showToast('Pseudo trop court',true);return;}pseudo=v;localStorage.setItem('af_pseudo',pseudo);document.getElementById('pseudoSetup').style.display='none';showPseudoHdr();showToast('✅ Pseudo : '+pseudo);}\nfunction savePseudoCommu(){const v=document.getElementById('pseudoCommu')?.value?.trim();if(!v||v.length<2){showToast('Pseudo trop court',true);return;}pseudo=v;localStorage.setItem('af_pseudo',pseudo);showPseudoHdr();renderCommunaute();showToast('🎉 Bienvenue '+pseudo+' !');fireConfetti();}\nfunction showPseudoHdr(){const el=document.getElementById('hdrPseudo');el.style.display='inline';el.textContent=`👤 ${pseudo} · ${myXP} XP`;}\n\nfunction showProdSugg(){\n  const q=document.getElementById('fProduit').value.toLowerCase().trim();\n  if(q.length<2){document.getElementById('prodSugg').innerHTML='';return;}\n  const sugg=[...new Set(allData.map(p=>p.produit))].filter(p=>p.toLowerCase().includes(q)).slice(0,4);\n  document.getElementById('prodSugg').innerHTML=sugg.map(s=>`<button onclick="document.getElementById('fProduit').value='${s.replace(/'/g,"\\'")}';document.getElementById('prodSugg').innerHTML='';" style="display:inline-block;padding:4px 10px;border-radius:20px;font-size:11px;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);cursor:pointer;margin:0 4px 4px 0;">${s}</button>`).join('');
 }
 
 async function ajouterPrix(){
@@ -1663,52 +1566,7 @@ function renderComparateur(){
     return;
   }
   if(ensA===ensB){el.innerHTML=`<div class="empty" style="padding:20px;">Choisis deux enseignes différentes</div>`;return;}
-  if(!panierItems.length){el.innerHTML=`<div class="empty" style="padding:20px;">Ton panier est vide — ajoute des produits d'abord</div>`;return;}
-
-  // Filtre par zone si actif
-  let enseignesMag = activeVille&&activeZone ? getMagasinsByZone(activeVille,activeZone).map(m=>m.enseigne) : null;
-
-  const calcTotal=(ens)=>{
-    let total=0,found=0,rows=[];
-    panierItems.forEach(item=>{
-      const matches=allData.filter(p=>(p.produit||'').toLowerCase().includes(item.toLowerCase())&&p.enseigne===ens&&(!enseignesMag||enseignesMag.includes(p.enseigne)));
-      if(matches.length){
-        const best=matches.reduce((a,b)=>a.prix<b.prix?a:b);
-        total+=best.prix;found++;
-        rows.push({item,produit:best.produit,marque:best.marque,prix:best.prix,found:true});
-      }else rows.push({item,found:false});
-    });
-    return{total:parseFloat(total.toFixed(2)),found,rows,coverage:found/panierItems.length};
-  };
-
-  const rA=calcTotal(ensA),rB=calcTotal(ensB);
-  const winnerIsA=rA.total<=rB.total&&rA.coverage>=rB.coverage || (rA.coverage>rB.coverage);
-  const eco=Math.abs(rA.total-rB.total).toFixed(2);
-
-  el.innerHTML=`
-    <div style="display:flex;gap:8px;margin-bottom:12px;">
-      <div class="cmp-card${winnerIsA?' cmp-winner':' cmp-loser'}">
-        ${logoHtml(ensA)}
-        <div class="cmp-ens-name" style="margin-top:6px;">${ensA}${winnerIsA?' 🏆':''}</div>
-        <div class="cmp-total" style="color:${winnerIsA?'var(--green)':'var(--text)'};">${rA.total.toFixed(2)} €</div>
-        <div style="font-size:11px;color:var(--text2);">${rA.found}/${panierItems.length} produits</div>
-        <div style="margin-top:8px;">
-          ${rA.rows.map(r=>r.found?`<div class="cmp-row"><span>${getProductEmoji(r.produit||'')} ${r.item}</span><span>${r.prix.toFixed(2)} €</span></div>`:`<div class="cmp-row" style="opacity:.4;"><span>${r.item}</span><span>—</span></div>`).join('')}
-        </div>
-      </div>
-      <div class="cmp-card${!winnerIsA?' cmp-winner':' cmp-loser'}">
-        ${logoHtml(ensB)}
-        <div class="cmp-ens-name" style="margin-top:6px;">${ensB}${!winnerIsA?' 🏆':''}</div>
-        <div class="cmp-total" style="color:${!winnerIsA?'var(--green)':'var(--text)'};">${rB.total.toFixed(2)} €</div>
-        <div style="font-size:11px;color:var(--text2);">${rB.found}/${panierItems.length} produits</div>
-        <div style="margin-top:8px;">
-          ${rB.rows.map(r=>r.found?`<div class="cmp-row"><span>${getProductEmoji(r.produit||'')} ${r.item}</span><span>${r.prix.toFixed(2)} €</span></div>`:`<div class="cmp-row" style="opacity:.4;"><span>${r.item}</span><span>—</span></div>`).join('')}
-        </div>
-      </div>
-    </div>
-    ${parseFloat(eco)>0.1?`<div style="background:var(--gbg);border:1px solid var(--gborder);border-radius:var(--rsm);padding:11px;text-align:center;margin-bottom:10px;">
-      <div style="font-size:14px;font-weight:800;color:var(--green);">💰 ${winnerIsA?ensA:ensB} est moins cher de <strong>${eco} €</strong></div>
-      <div style="font-size:11px;color:var(--text2);margin-top:3px;">Sur l'ensemble de ton panier${activeZone?' dans la zone '+activeZone:''}</div>
+  if(!panierItems.length){el.innerHTML=`<div class="empty" style="padding:20px;">Ton panier est vide — ajoute des produits d'abord</div>`;return;}\n\n  // Filtre par zone si actif\n  let enseignesMag = activeVille&&activeZone ? getMagasinsByZone(activeVille,activeZone).map(m=>m.enseigne) : null;\n\n  const calcTotal=(ens)=>{\n    let total=0,found=0,rows=[];\n    panierItems.forEach(item=>{\n      const matches=allData.filter(p=>(p.produit||'').toLowerCase().includes(item.toLowerCase())&&p.enseigne===ens&&(!enseignesMag||enseignesMag.includes(p.enseigne)));\n      if(matches.length){\n        const best=matches.reduce((a,b)=>a.prix<b.prix?a:b);\n        total+=best.prix;found++;\n        rows.push({item,produit:best.produit,marque:best.marque,prix:best.prix,found:true});\n      }else rows.push({item,found:false});\n    });\n    return{total:parseFloat(total.toFixed(2)),found,rows,coverage:found/panierItems.length};\n  };\n\n  const rA=calcTotal(ensA),rB=calcTotal(ensB);\n  const winnerIsA=rA.total<=rB.total&&rA.coverage>=rB.coverage || (rA.coverage>rB.coverage);\n  const eco=Math.abs(rA.total-rB.total).toFixed(2);\n\n  el.innerHTML=`\n    <div style="display:flex;gap:8px;margin-bottom:12px;">\n      <div class="cmp-card${winnerIsA?' cmp-winner':' cmp-loser'}">\n        ${logoHtml(ensA)}\n        <div class="cmp-ens-name" style="margin-top:6px;">${ensA}${winnerIsA?' 🏆':''}</div>\n        <div class="cmp-total" style="color:${winnerIsA?'var(--green)':'var(--text)'};">${rA.total.toFixed(2)} €</div>\n        <div style="font-size:11px;color:var(--text2);">${rA.found}/${panierItems.length} produits</div>\n        <div style="margin-top:8px;">\n          ${rA.rows.map(r=>r.found?`<div class="cmp-row"><span>${getProductEmoji(r.produit||'')} ${r.item}</span><span>${r.prix.toFixed(2)} €</span></div>`:`<div class="cmp-row" style="opacity:.4;"><span>${r.item}</span><span>—</span></div>`).join('')}\n        </div>\n      </div>\n      <div class="cmp-card${!winnerIsA?' cmp-winner':' cmp-loser'}">\n        ${logoHtml(ensB)}\n        <div class="cmp-ens-name" style="margin-top:6px;">${ensB}${!winnerIsA?' 🏆':''}</div>\n        <div class="cmp-total" style="color:${!winnerIsA?'var(--green)':'var(--text)'};">${rB.total.toFixed(2)} €</div>\n        <div style="font-size:11px;color:var(--text2);">${rB.found}/${panierItems.length} produits</div>\n        <div style="margin-top:8px;">\n          ${rB.rows.map(r=>r.found?`<div class="cmp-row"><span>${getProductEmoji(r.produit||'')} ${r.item}</span><span>${r.prix.toFixed(2)} €</span></div>`:`<div class="cmp-row" style="opacity:.4;"><span>${r.item}</span><span>—</span></div>`).join('')}\n        </div>\n      </div>\n    </div>\n    ${parseFloat(eco)>0.1?`<div style="background:var(--gbg);border:1px solid var(--gborder);border-radius:var(--rsm);padding:11px;text-align:center;margin-bottom:10px;">\n      <div style="font-size:14px;font-weight:800;color:var(--green);">💰 ${winnerIsA?ensA:ensB} est moins cher de <strong>${eco} €</strong></div>\n      <div style="font-size:11px;color:var(--text2);margin-top:3px;">Sur l'ensemble de ton panier${activeZone?' dans la zone '+activeZone:''}</div>
     </div>`:''}
     <button onclick="copyComparateurDrive('${winnerIsA?ensA:ensB}')" class="btn btn-outline" style="margin-bottom:6px;">📋 Copier liste Drive ${winnerIsA?ensA:ensB}</button>`;
 }
@@ -1725,9 +1583,7 @@ function copyComparateurDrive(ens){
     return rows;
   };
   const rows=calcTotal(ens);
-  const txt=rows.map((r,i)=>`${i+1}. ${r.produit}${r.marque?' ('+r.marque+')':''} → ${r.prix.toFixed(2)} €`).join('
-');
-  navigator.clipboard.writeText(txt).then(()=>showToast('Liste copiée 📋')).catch(()=>showToast('Copie OK',true));
+  const txt=rows.map((r,i)=>[(i+1)+'. '+r.produit+(r.marque?' ('+r.marque+')':'')+' - '+r.prix.toFixed(2)+' EUR']).join('\n');  navigator.clipboard.writeText(txt).then(()=>showToast('Liste copiée 📋')).catch(()=>showToast('Copie OK',true));
 }
 
 // ── CALCUL DÉTOUR PANIER ──
@@ -1825,40 +1681,7 @@ async function scanTicket(event){
     renderScanResult(items, text);
   }catch(err){
     document.getElementById('scanLoader').style.display='none';
-    document.getElementById('scanResult').innerHTML=`<div class="empty">Erreur OCR : ${err.message}<br><br>Assure-toi que l'image est nette et bien éclairée.</div>`;
-  }
-}
-
-function parseTicket(rawText){
-  const lines=rawText.split('
-').map(l=>l.trim()).filter(l=>l.length>2);
-  const items=[];
-  const priceRegex=/(\d+[.,]\d{2})\s*[€E]?\s*$/;
-  const skipWords=['total','ttc','tva','carte','merci','ticket','date','heure','caisse','avoir','rendu','especes','cb','visa','master'];
-
-  lines.forEach(line=>{
-    const lower=line.toLowerCase();
-    if(skipWords.some(w=>lower.includes(w))) return;
-    const priceMatch=line.match(priceRegex);
-    if(priceMatch){
-      const prix=parseFloat(priceMatch[1].replace(',','.'));
-      if(prix>0&&prix<500){
-        // Nettoie le nom du produit
-        let nom=line.replace(priceRegex,'').trim();
-        nom=nom.replace(/^\d+\s+/,'').replace(/\s+\d+\s*$/,'').trim();
-        if(nom.length>2&&nom.length<60){
-          items.push({nom:nom.toUpperCase(),prix,selected:true});
-        }
-      }
-    }
-  });
-  return items;
-}
-
-function renderScanResult(items, rawText){
-  if(!items.length){
-    document.getElementById('scanResult').innerHTML=`<div style="margin-bottom:10px;">
-      <div class="empty" style="padding:16px;">Aucun produit détecté automatiquement.<br>L'image est-elle nette et bien éclairée ?</div>
+    document.getElementById('scanResult').innerHTML=`<div class="empty">Erreur OCR : ${err.message}<br><br>Assure-toi que l'image est nette et bien éclairée.</div>`;\n  }\n}\n\nfunction parseTicket(rawText){\n  const lines=rawText.split('\n').map(l=>l.trim()).filter(l=>l.length>2);\n  const items=[];\n  const priceRegex=/(\d+[.,]\d{2})\s*[€E]?\s*$/;\n  const skipWords=['total','ttc','tva','carte','merci','ticket','date','heure','caisse','avoir','rendu','especes','cb','visa','master'];\n\n  lines.forEach(line=>{\n    const lower=line.toLowerCase();\n    if(skipWords.some(w=>lower.includes(w))) return;\n    const priceMatch=line.match(priceRegex);\n    if(priceMatch){\n      const prix=parseFloat(priceMatch[1].replace(',','.'));\n      if(prix>0&&prix<500){\n        // Nettoie le nom du produit\n        let nom=line.replace(priceRegex,'').trim();\n        nom=nom.replace(/^\d+\s+/,'').replace(/\s+\d+\s*$/,'').trim();\n        if(nom.length>2&&nom.length<60){\n          items.push({nom:nom.toUpperCase(),prix,selected:true});\n        }\n      }\n    }\n  });\n  return items;\n}\n\nfunction renderScanResult(items, rawText){\n  if(!items.length){\n    document.getElementById('scanResult').innerHTML=`<div style="margin-bottom:10px;">\n      <div class="empty" style="padding:16px;">Aucun produit détecté automatiquement.<br>L'image est-elle nette et bien éclairée ?</div>
       <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--rsm);padding:10px;font-size:10px;color:var(--text3);font-family:monospace;max-height:120px;overflow-y:auto;">${rawText.replace(/</g,'&lt;')}</div>
     </div>`;
     return;
@@ -1904,102 +1727,7 @@ async function importScanToSupabase(){
   if(!enseigne){showToast('Choisis une enseigne !',true);return;}
   const items=window._scanItems?.filter(i=>i.selected)??[];
   if(!items.length){showToast('Sélectionne au moins un produit',true);return;}
-  if(!pseudo){showToast('Crée ton pseudo d'abord !',true);return;}
-
-  // Transforme en JSON Supabase
-  const records=items.map(item=>({
-    produit: item.nom.charAt(0)+item.nom.slice(1).toLowerCase(),
-    marque: '',
-    typeMarque: 'mdd',
-    prix: item.prix,
-    enseigne, ville,
-    drive: false,
-    contributeur: pseudo,
-    source: 'scan-ticket',
-  }));
-
-  try{
-    const res=await db.from('prix').insert(records);
-    if(res.error)throw res.error;
-    myXP+=records.length*5;myContribs+=records.length;
-    localStorage.setItem('af_xp',myXP);localStorage.setItem('af_contribs',myContribs);
-    try{await db.from('contributeurs').upsert({pseudo,points:myXP},{onConflict:'pseudo'});}catch(e){}
-    showPseudoHdr();
-    showToast(`✅ ${records.length} prix importés ! +${records.length*5} XP`,'pts');
-    fireConfetti();
-    await fetchData();
-  }catch(e){
-    showToast('Erreur Supabase : '+e.message,true);
-    console.error('Scan import error:',e,'
-JSON preview:',JSON.stringify(records,null,2));
-  }
-}
-
-function importScanToPanier(){
-  const items=window._scanItems?.filter(i=>i.selected)??[];
-  items.forEach(item=>{
-    const nom=item.nom.charAt(0)+item.nom.slice(1).toLowerCase();
-    if(!panierItems.includes(nom)) panierItems.push(nom);
-  });
-  savePanier();
-  updateCartBadge();
-  showToast(`🧺 ${items.length} produit${items.length>1?'s':''} ajouté${items.length>1?'s':''} au panier !`);
-  setPanierTab('presets');
-}
-
-// ── ANIMATIONS PANIER ──
-function flyToCart(e, produit){
-  e.preventDefault();
-  const btn = e.currentTarget;
-  btn.classList.add('add-pop');
-  setTimeout(()=>btn.classList.remove('add-pop'),250);
-
-  const btnRect = btn.getBoundingClientRect();
-  const cartBtn = document.getElementById('cartHeaderBtn');
-  const cartRect = cartBtn ? cartBtn.getBoundingClientRect() : {left:window.innerWidth-50,top:10};
-
-  const startX = btnRect.left + btnRect.width/2 - 13;
-  const startY = btnRect.top + btnRect.height/2 - 13;
-  const dx = (cartRect.left + cartRect.width/2) - startX;
-  const dy = (cartRect.top + cartRect.height/2) - startY;
-
-  // Crée le emoji volant
-  const fly = document.createElement('div');
-  fly.className = 'fly-emoji';
-  fly.textContent = produit.emoji || getProductEmoji(produit.produit||'');
-  fly.style.left = startX + 'px';
-  fly.style.top = startY + 'px';
-  fly.style.setProperty('--dx', dx);
-  fly.style.setProperty('--dy', dy);
-  document.body.appendChild(fly);
-  fly.addEventListener('animationend', () => fly.remove());
-
-  // Ajoute au panier après 580ms
-  setTimeout(() => {
-    const v = produit.produit || produit.name;
-    if(v && !panierItems.includes(v)){
-      panierItems.push(v);
-      savePanier();
-    }
-    updateCartBadge();
-    // Rebond sur le bouton cart
-    const cb = document.getElementById('cartHeaderBtn');
-    if(cb){ cb.classList.remove('cart-bounce'); void cb.offsetWidth; cb.classList.add('cart-bounce'); setTimeout(()=>cb.classList.remove('cart-bounce'),400); }
-    showToast(`${produit.emoji||'🛒'} Ajouté au panier !`);
-  }, 580);
-}
-
-function updateCartBadge(){
-  const badge = document.getElementById('cartBadge');
-  if(!badge) return;
-  const n = panierItems.length;
-  if(n > 0){ badge.style.display='flex'; badge.textContent=n; }
-  else { badge.style.display='none'; }
-}
-
-init();
-// Mise à jour du badge au chargement
-setTimeout(updateCartBadge, 500);
-</script>
+  if(!pseudo){showToast('Crée ton pseudo d'abord !',true);return;}\n\n  // Transforme en JSON Supabase\n  const records=items.map(item=>({\n    produit: item.nom.charAt(0)+item.nom.slice(1).toLowerCase(),\n    marque: '',\n    typeMarque: 'mdd',\n    prix: item.prix,\n    enseigne, ville,\n    drive: false,\n    contributeur: pseudo,\n    source: 'scan-ticket',\n  }));\n\n  try{\n    const res=await db.from('prix').insert(records);\n    if(res.error)throw res.error;\n    myXP+=records.length*5;myContribs+=records.length;\n    localStorage.setItem('af_xp',myXP);localStorage.setItem('af_contribs',myContribs);\n    try{await db.from('contributeurs').upsert({pseudo,points:myXP},{onConflict:'pseudo'});}catch(e){}\n    showPseudoHdr();\n    showToast(`✅ ${records.length} prix importés ! +${records.length*5} XP`,'pts');\n    fireConfetti();\n    await fetchData();\n  }catch(e){\n    showToast('Erreur Supabase : '+e.message,true);\n    console.error('Scan import error:',e,'
+JSON preview:',JSON.stringify(records,null,2));\n  }\n}\n\nfunction importScanToPanier(){\n  const items=window._scanItems?.filter(i=>i.selected)??[];\n  items.forEach(item=>{\n    const nom=item.nom.charAt(0)+item.nom.slice(1).toLowerCase();\n    if(!panierItems.includes(nom)) panierItems.push(nom);\n  });\n  savePanier();\n  updateCartBadge();\n  showToast(`🧺 ${items.length} produit${items.length>1?'s':''} ajouté${items.length>1?'s':''} au panier !`);\n  setPanierTab('presets');\n}\n\n// ── ANIMATIONS PANIER ──\nfunction flyToCart(e, produit){\n  e.preventDefault();\n  const btn = e.currentTarget;\n  btn.classList.add('add-pop');\n  setTimeout(()=>btn.classList.remove('add-pop'),250);\n\n  const btnRect = btn.getBoundingClientRect();\n  const cartBtn = document.getElementById('cartHeaderBtn');\n  const cartRect = cartBtn ? cartBtn.getBoundingClientRect() : {left:window.innerWidth-50,top:10};\n\n  const startX = btnRect.left + btnRect.width/2 - 13;\n  const startY = btnRect.top + btnRect.height/2 - 13;\n  const dx = (cartRect.left + cartRect.width/2) - startX;\n  const dy = (cartRect.top + cartRect.height/2) - startY;\n\n  // Crée le emoji volant\n  const fly = document.createElement('div');\n  fly.className = 'fly-emoji';\n  fly.textContent = produit.emoji || getProductEmoji(produit.produit||'');\n  fly.style.left = startX + 'px';\n  fly.style.top = startY + 'px';\n  fly.style.setProperty('--dx', dx);\n  fly.style.setProperty('--dy', dy);\n  document.body.appendChild(fly);\n  fly.addEventListener('animationend', () => fly.remove());\n\n  // Ajoute au panier après 580ms\n  setTimeout(() => {\n    const v = produit.produit || produit.name;\n    if(v && !panierItems.includes(v)){\n      panierItems.push(v);\n      savePanier();\n    }\n    updateCartBadge();\n    // Rebond sur le bouton cart\n    const cb = document.getElementById('cartHeaderBtn');\n    if(cb){ cb.classList.remove('cart-bounce'); void cb.offsetWidth; cb.classList.add('cart-bounce'); setTimeout(()=>cb.classList.remove('cart-bounce'),400); }\n    showToast(`${produit.emoji||'🛒'} Ajouté au panier !`);\n  }, 580);\n}\n\nfunction updateCartBadge(){\n  const badge = document.getElementById('cartBadge');\n  if(!badge) return;\n  const n = panierItems.length;\n  if(n > 0){ badge.style.display='flex'; badge.textContent=n; }\n  else { badge.style.display='none'; }\n}\n\ninit();\n// Mise à jour du badge au chargement\nsetTimeout(updateCartBadge, 500);\n</script>
 </body>
 </html>
